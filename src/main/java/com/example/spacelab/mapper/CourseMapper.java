@@ -15,14 +15,16 @@ import com.example.spacelab.repository.*;
 import com.example.spacelab.util.ProgramDuration;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-@Component
 @Data
+@Slf4j
+@Component
 @RequiredArgsConstructor
 public class CourseMapper {
 
@@ -98,18 +100,18 @@ public class CourseMapper {
         }
         return new PageImpl<>(dtos, coursePage.getPageable(), coursePage.getTotalElements());
     }
+
     public CourseInfoDTO fromCourseToInfoDTO(Course course) {
         CourseInfoDTO dto = new CourseInfoDTO();
-//        dto.setId(course.getId());
-//        dto.setName(course.getName());
-        dto.setDescription(course.getCourseInfo().getMain_description());
-        dto.setTopics(course.getCourseInfo().getTopics());
+        CourseInfo courseInfo = course.getCourseInfo();
+        dto.setDescription(courseInfo.getMain_description());
+        dto.setTopics(courseInfo.getTopics());
         dto.setSettings(new CourseSettingsDTO(
-                new ProgramDuration(course.getCourseInfo().getCompletionTime()),
-                course.getCourseInfo().getGroupSize(),
-                course.getCourseInfo().getHoursNorm()
+                courseInfo.getCompletionTime(),
+                courseInfo.getCompletionTimeUnit(),
+                courseInfo.getGroupSize(),
+                courseInfo.getHoursNorm()
         ));
-//        dto.setStatus(course.getStatus());
         return dto;
     }
 
@@ -274,7 +276,8 @@ public class CourseMapper {
                         course.getCourseInfo().getMain_description(),
                         course.getCourseInfo().getTopics(),
                         new CourseSettingsDTO(
-                                new ProgramDuration(course.getCourseInfo().getCompletionTime()),
+                                course.getCourseInfo().getCompletionTime(),
+                                course.getCourseInfo().getCompletionTimeUnit(),
                                 course.getCourseInfo().getGroupSize(),
                                 course.getCourseInfo().getHoursNorm()
                         )
@@ -329,7 +332,8 @@ public class CourseMapper {
                             course.getCourseInfo().getMain_description(),
                             course.getCourseInfo().getTopics(),
                             new CourseSettingsDTO(
-                                    new ProgramDuration(course.getCourseInfo().getCompletionTime()),
+                                    course.getCourseInfo().getCompletionTime(),
+                                    course.getCourseInfo().getCompletionTimeUnit(),
                                     course.getCourseInfo().getGroupSize(),
                                     course.getCourseInfo().getHoursNorm()
                             )
@@ -367,6 +371,7 @@ public class CourseMapper {
             );
 
         } catch (Exception e) {
+            log.error(e.getMessage());
             throw new MappingException(e.getMessage());
         }
 
@@ -384,7 +389,7 @@ public class CourseMapper {
             course.getCourseInfo().getTopics().addAll(dto.getInfo().getTopics());
             course.getCourseInfo().setGroupSize(dto.getInfo().getSettings().groupSize());
             course.getCourseInfo().setHoursNorm(dto.getInfo().getSettings().hoursNorm());
-            course.getCourseInfo().setCompletionTime(dto.getInfo().getSettings().programDuration().getDurationString());
+            course.getCourseInfo().setCompletionTime(dto.getInfo().getSettings().completionTime());
 
             AdminAvatarDTO mentor = dto.getMembers().getMentor();
             AdminAvatarDTO manager = dto.getMembers().getManager();

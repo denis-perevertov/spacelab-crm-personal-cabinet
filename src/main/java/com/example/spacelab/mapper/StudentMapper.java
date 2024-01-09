@@ -7,6 +7,7 @@ import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentDetails;
 import com.example.spacelab.model.student.StudentInviteRequest;
+import com.example.spacelab.model.student.StudentLoginInfoDTO;
 import com.example.spacelab.repository.CourseRepository;
 import com.example.spacelab.repository.StudentRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -243,5 +244,41 @@ public class StudentMapper {
 
 
         return request;
+    }
+
+    public StudentLoginInfoDTO fromStudentToLoginInfoDTO(Student student) {
+        return new StudentLoginInfoDTO(
+                student.getId(),
+                (student.getDetails().getFirstName() + " " + student.getDetails().getLastName()),
+                student.getRole().getName(),
+                student.getAvatar(),
+                List.of(student.getCourse().getId()),
+                student.getRole().getAuthorities()
+        );
+    }
+
+    public Student fromRegisterRequestToStudent(StudentRegisterRequest request) {
+        Student student = new Student();
+
+        StudentDetails details = student.getDetails();
+        details.setFirstName(request.firstName());
+        details.setLastName(request.lastName());
+        details.setFathersName(request.middleName());
+        details.setBirthdate(request.birthdate());
+        details.setPhone(request.phone());
+        details.setEmail(request.email());
+        details.setTelegram(request.telegram());
+        details.setGithubLink(request.github());
+        details.setLinkedinLink(request.linkedin());
+        details.setEducationLevel(request.education());
+        details.setEnglishLevel(request.english());
+        details.setWorkStatus(request.workStatus());
+        details.setAvailableTime(request.availableTime());
+
+        if(request.courseId() != null) {
+            courseRepository.findById(request.courseId()).ifPresent(student::setCourse);
+        }
+
+        return student;
     }
 }

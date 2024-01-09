@@ -53,4 +53,6 @@ public class StudentDetails {
     @Schema(example = "ACTIVE")
     private StudentAccountStatus accountStatus;
 
+    private String availableTime;
+
 }

@@ -1,6 +1,7 @@
 package com.example.spacelab.model;
 
 import com.example.spacelab.model.admin.Admin;
+import com.example.spacelab.model.student.Student;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -15,8 +16,8 @@ public class RefreshToken {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
-    @OneToOne
-    private Admin admin;
+    @ManyToOne
+    private Student principal;
 
     @Column(nullable = false, unique = true)
     private String token;

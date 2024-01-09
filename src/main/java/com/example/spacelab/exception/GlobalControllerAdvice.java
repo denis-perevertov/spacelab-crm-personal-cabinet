@@ -4,6 +4,7 @@ import com.example.spacelab.model.admin.Admin;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.java.Log;
@@ -97,6 +98,15 @@ public class GlobalControllerAdvice {
         return new ResponseEntity<>(
                 new ErrorMessage("Bad request!", HttpStatus.BAD_REQUEST.value(), Map.of("error", e.getMessage())),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(EntityNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ResponseEntity<ErrorMessage> notFoundHandler(Exception e) {
+        return new ResponseEntity<>(
+                new ErrorMessage("Entity not found!", HttpStatus.NOT_FOUND.value(), Map.of("error", e.getMessage())),
+                HttpStatus.NOT_FOUND
         );
     }
 //

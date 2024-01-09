@@ -13,6 +13,7 @@ public class FilterForm {
     private String name;
 //    @Schema(defaultValue = "0")
     private Long course;
+    private Long student;
 //    @Schema(defaultValue = "test@gmail.com")
     private String email;
 //    @Schema(defaultValue = "+380123456789")
@@ -44,22 +45,5 @@ public class FilterForm {
     private Boolean verified;
 
     public static FilterBuilder with() { return new FilterBuilder(); }
-//
-//    @Override
-//    public String toString() {
-//        StringBuilder sb = new StringBuilder();
-//        for(Field field : this.getClass().getFields()) {
-//            field.setAccessible(true);
-//            try {
-//                sb.append(field.getName())
-//                        .append("=")
-//                        .append(field.get(this))
-//                        .append(",");
-//            } catch (IllegalAccessException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }
-//        if(sb.length() > 0) sb.deleteCharAt(sb.length()-1);
-//        return sb.toString();
-//    }
+
 }

@@ -1,5 +1,6 @@
 package com.example.spacelab.service;
 
+import com.example.spacelab.dto.student.StudentLessonDisplayDTO;
 import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.task.Task;
 import com.example.spacelab.util.FilterForm;
@@ -10,19 +11,9 @@ import java.util.List;
 
 public interface LessonService extends EntityFilterService<Lesson>{
     List<Lesson> getLessons();
-    Page<Lesson> getLessons(Pageable pageable);
-    Page<Lesson> getLessons(FilterForm filters, Pageable pageable);
-
-    List<Lesson> getLessonsByAllowedCourses(Long... ids);
-    Page<Lesson> getLessonsByAllowedCourses(Pageable pageable, Long... ids);
-    Page<Lesson> getLessonsByAllowedCourses(FilterForm filters, Pageable pageable, Long... ids);
-
+    List<Lesson> getStudentLessons();
     Lesson getLessonById(Long id);
-    Lesson createNewLesson(Lesson lesson);
-    Lesson editLesson(Lesson lesson);
-
-    void deleteLessonById(Long id);
-
     void startLesson(Long id);
-    void completeLesson(Long id);
+
+    List<StudentLessonDisplayDTO> getStudentLessonDisplayData(Long id);
 }

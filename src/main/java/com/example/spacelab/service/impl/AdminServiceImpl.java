@@ -135,8 +135,4 @@ public class AdminServiceImpl implements AdminService {
         return spec;
     }
 
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return adminRepository.findByEmail(username).orElseThrow(() -> new UsernameNotFoundException("User not found by login: " + username));
-    }
 }

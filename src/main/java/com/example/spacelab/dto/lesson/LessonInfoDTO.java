@@ -1,5 +1,8 @@
 package com.example.spacelab.dto.lesson;
 
+import com.example.spacelab.dto.admin.AdminAvatarDTO;
+import com.example.spacelab.dto.course.CourseLinkIconDTO;
+import com.example.spacelab.dto.student.StudentAvatarDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,11 +22,13 @@ public class LessonInfoDTO {
     @Schema(example = "ACTIVE")
     private String status;
 
-    private List<LessonReportRowDTO> lessonReportRowList;
+    private String link;
 
-    public LessonInfoDTO(Long id, LocalDateTime datetime, String status) {
-        this.id = id;
-        this.datetime = datetime;
-        this.status = status;
-    }
+    private CourseLinkIconDTO course;
+
+    private AdminAvatarDTO mentor;
+
+    private List<StudentAvatarDTO> students;
+
+    private List<LessonReportRowDTO> lessonReportRowList;
 }

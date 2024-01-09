@@ -2,6 +2,7 @@ package com.example.spacelab.config;
 
 import com.example.spacelab.service.AdminService;
 
+import com.example.spacelab.service.StudentService;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.FilterChain;
@@ -33,17 +34,16 @@ import java.security.SignatureException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final AdminService userDetailsService;
+    private final StudentService userDetailsService;
     private final HandlerExceptionResolver resolver;
 
     public JwtAuthFilter(JwtService jwtService,
-                         AdminService userDetailsService,
+                         StudentService userDetailsService,
                          @Qualifier("handlerExceptionResolver") HandlerExceptionResolver resolver) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.resolver = resolver;
     }
-
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -52,22 +52,28 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String token = null;
         String username = null;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            log.info("Authorization header starts with bearer");
             token = authHeader.substring(7);
             try {
+                log.info("extracting username from token...");
                 username = jwtService.extractUsername(token);
             } catch (MalformedJwtException e) {
                 log.severe("JWT token is malformed");
                 log.severe(e.getMessage());
             }
-
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            log.info("loading user by username...");
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);
             if (jwtService.validateToken(token, userDetails)) {
+                log.info("validated jwt token");
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+            else {
+                log.severe("not validated token");
             }
         }
 

@@ -2,6 +2,7 @@ package com.example.spacelab.config;
 
 import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.role.UserRole;
+import com.example.spacelab.model.student.Student;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -15,9 +16,9 @@ public class WithMockCustomUserSecurityContextFactory implements WithSecurityCon
 
         SecurityContext context = SecurityContextHolder.createEmptyContext();
 
-        Admin basicUser = new Admin();
-        basicUser.setFirstName("test");
-        basicUser.setEmail("test@gmail.com");
+        Student basicUser = new Student();
+        basicUser.getDetails().setFirstName("test");
+        basicUser.getDetails().setEmail("test@gmail.com");
         basicUser.setPassword("test");
 
         UserRole adminRole = new UserRole();

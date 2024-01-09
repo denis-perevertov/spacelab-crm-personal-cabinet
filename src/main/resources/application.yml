@@ -31,6 +31,7 @@ spring:
     ansi:
       enabled: ALWAYS
 
+
 springdoc:
   packages-to-scan: com.example.spacelab.controller, com.example.spacelab.model
   packages-to-exclude: com.example.spacelab.repository

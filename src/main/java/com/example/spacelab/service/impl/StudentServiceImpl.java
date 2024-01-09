@@ -1,5 +1,6 @@
 package com.example.spacelab.service.impl;
 
+import com.example.spacelab.dto.student.StudentRegisterRequest;
 import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.mapper.StudentMapper;
 import com.example.spacelab.mapper.TaskMapper;
@@ -11,12 +12,14 @@ import com.example.spacelab.model.student.StudentTask;
 import com.example.spacelab.dto.student.StudentCardDTO;
 import com.example.spacelab.model.task.Task;
 import com.example.spacelab.repository.*;
+import com.example.spacelab.service.FileService;
 import com.example.spacelab.service.StudentService;
 import com.example.spacelab.service.TaskService;
 import com.example.spacelab.service.specification.StudentSpecifications;
 import com.example.spacelab.util.FilterForm;
 import com.example.spacelab.model.student.StudentAccountStatus;
 import com.example.spacelab.model.student.StudentTaskStatus;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Predicate;
@@ -27,8 +30,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -45,75 +52,17 @@ public class StudentServiceImpl implements StudentService {
     private final UserRoleRepository userRoleRepository;
 
     private final TaskService taskService;
+    private final FileService fileService;
 
     private final StudentMapper studentMapper;
     private final TaskMapper taskMapper;
 
-    @Override
-    public List<Student> getStudents() {
-        log.info("Getting all students' info without filters or pages...");
-        return studentRepository.findAll();
-    }
-
-    @Override
-    public Page<Student> getStudents(Pageable pageable) {
-        log.info("Getting all students' info with page " + pageable.getPageNumber() +
-                " / size " + pageable.getPageSize());
-        return studentRepository.findAll(pageable);
-    }
-
-    public Page<Student> getStudents(FilterForm filters, Pageable pageable) {
-        log.info("Getting all students' info with page " + pageable.getPageNumber() +
-                " / size " + pageable.getPageSize() + " and filters: " + filters);
-        Specification<Student> spec = buildSpecificationFromFilters(filters);
-        return studentRepository.findAll(spec, pageable);
-    }
-
-    @Override
-    public Page<Student> getStudentsWithoutCourses(FilterForm filters, Pageable pageable) {
-        log.info("Getting all students without courses with page {} / size {} and filters: {}",
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                filters);
-        Specification<Student> noCourseSpec = (root, query, criteriaBuilder) -> criteriaBuilder.isNull(root.get("course"));
-        Specification<Student> generalSpec = buildSpecificationFromFilters(filters).and(noCourseSpec);
-        return studentRepository.findAll(generalSpec, pageable);
-    }
-
-    public List<Student> getStudentsByAllowedCourses(Long... ids) {
-        log.info("Getting all students' info without filters or pages | for courses with IDs: " + Arrays.toString(ids));
-        return studentRepository.findAllByAllowedCourse(ids);
-    }
-
-    public Page<Student> getStudentsByAllowedCourses(Pageable pageable, Long... ids) {
-        log.info("Getting all students' info with page " + pageable.getPageNumber() +
-                " / size " + pageable.getPageSize() + " | for courses with IDs: " + Arrays.toString(ids));
-        return studentRepository.findAllByAllowedCoursePage(pageable, ids);
-    }
-
-    public Page<Student> getStudentsByAllowedCourses(FilterForm filters, Pageable pageable, Long... ids) {
-        log.info("Getting all students' info with page " + pageable.getPageNumber() +
-                " / size " + pageable.getPageSize() + " and filters: " + filters + " | for courses with IDs: " + Arrays.toString(ids));
-        Specification<Student> spec = buildSpecificationFromFilters(filters).and(StudentSpecifications.hasCourseIDs(ids));
-        return studentRepository.findAll(spec, pageable);
-    }
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public Student getStudentById(Long id) {
         log.info("Getting student with ID: " + id);
         Student student = studentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Student not found", Student.class));
-        return student;
-    }
-
-    @Override
-    public Student createNewStudent(Student student) {
-
-        student.setRating(0);
-        student.setRole(userRoleRepository.getReferenceByName("STUDENT"));
-        student.getDetails().setAccountStatus(StudentAccountStatus.ACTIVE);
-
-        student = studentRepository.save(student);
-        log.info("Created student: " + student);
         return student;
     }
 
@@ -130,11 +79,19 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Student editStudent(Student student) {
-
-        student = studentRepository.save(student);
-        log.info("Edited student: " + student);
-        return student;
+    public Student registerStudent(StudentRegisterRequest request) throws IOException {
+        log.info("registering student through request from website");
+        Student student = studentMapper.fromRegisterRequestToStudent(request);
+        student.setRating(0);
+        student.setRole(userRoleRepository.getReferenceByName("STUDENT"));
+        student.getDetails().setAccountStatus(StudentAccountStatus.ACTIVE);
+        student.setPassword(passwordEncoder.encode(request.password()));
+        if(request.avatar().getSize() > 0) {
+            log.info("saving user avatar");
+            fileService.saveFile(request.avatar(), "users");
+            student.setAvatar("/uploads/users/" + request.avatar().getOriginalFilename());
+        }
+        return studentRepository.save(student);
     }
 
     @Override
@@ -142,14 +99,6 @@ public class StudentServiceImpl implements StudentService {
         Student student = studentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Student not found", Student.class));
         return studentMapper.fromStudentToCardDTO(student);
     }
-
-    @Override
-    public void deleteStudentById(Long id) {
-        Student student = studentRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Student not found", Student.class));
-        log.info("Deleting student with ID: " + id);
-        studentRepository.delete(student);
-    }
-
 
     /*
      = = = = = Задания студента = = = = =
@@ -208,23 +157,6 @@ public class StudentServiceImpl implements StudentService {
 //    public void completeStudentTask(Long taskID) {
 //
 //    }
-
-    @Override
-    public String createInviteStudentToken(StudentInviteRequest request) {
-        log.info("Creating token to use in Student invite URL...");
-        UUID id = UUID.randomUUID();
-        request.setId(id.toString());
-        log.info("Created token: " + id + ", saving token with set parameters in DB");
-        request = inviteRepository.save(request);
-        return request.getId();
-    }
-
-    @Override
-    public void transferStudentToCourse(Student student, Course course) {
-        student.setCourse(course);
-        taskService.createStudentTasksOnCourseTransfer(student, course);
-    }
-
     @Override
     public List<LessonReportRow> getStudentLessonData(Long studentID) {
         return getStudentById(studentID).getLessonData();
@@ -237,31 +169,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
-    public Specification<Student> buildSpecificationFromFilters(FilterForm filters) {
-
-        log.info("Building specification from filters: " + filters);
-
-        Long studentId = filters.getId();
-        String combined = filters.getCombined();
-        String nameEmailInput = filters.getName();
-        Long courseID = filters.getCourse();
-        String phoneInput = filters.getPhone();
-        String telegramInput = filters.getTelegram();
-        Integer ratingInput = filters.getRating();
-        String statusInput = filters.getStatus();
-
-        Course course = (courseID == null) ? null : courseRepository.getReferenceById(courseID);
-        StudentAccountStatus status = (statusInput == null) ? null : StudentAccountStatus.valueOf(statusInput);
-
-        Specification<Student> combinedSpec = Specification.where(StudentSpecifications.hasNameOrEmailLike(combined).or(StudentSpecifications.hasTelegramLike(combined)));
-
-        Specification<Student> spec = Specification.where(combinedSpec
-                                                    .and(StudentSpecifications.hasId(studentId))
-                                                    .and(StudentSpecifications.hasCourse(course))
-                                                    .and(StudentSpecifications.hasPhoneLike(phoneInput))
-                                                    .and(StudentSpecifications.hasRatingOrHigher(ratingInput))
-                                                    .and(StudentSpecifications.hasStatus(status)));
-
-        return spec;
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        return studentRepository.findByDetailsEmail(username).orElseThrow(() -> new EntityNotFoundException("Student not found!"));
     }
 }

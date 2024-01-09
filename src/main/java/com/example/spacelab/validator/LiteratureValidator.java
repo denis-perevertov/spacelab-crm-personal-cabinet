@@ -31,7 +31,7 @@ public class LiteratureValidator implements Validator {
     public void validate(Object target, Errors e) {
         LiteratureSaveDTO dto = (LiteratureSaveDTO) target;
 
-        System.out.println("dto: " + dto.toString());
+        System.out.println("dto: " + dto);
 
         if(dto.getName() == null || dto.getName().isEmpty())
             e.rejectValue("name", "name.empty", "Enter name!");
@@ -48,12 +48,12 @@ public class LiteratureValidator implements Validator {
             e.rejectValue("author", "author.length", "Author name length: 2-100");
         }
 
-        if(dto.getCourseID() == null || dto.getCourseID() <= 0) {
-            e.rejectValue("courseID", "courseID.empty", "Select course!");
-        }
-        else if(!courseRepository.existsById(dto.getCourseID())) {
-            e.rejectValue("courseID", "courseID.no-match", "Course with this ID doesn't exist!");
-        }
+//        if(dto.getCourseID() == null || dto.getCourseID() <= 0) {
+//            e.rejectValue("courseID", "courseID.empty", "Select course!");
+//        }
+//        else if(!courseRepository.existsById(dto.getCourseID())) {
+//            e.rejectValue("courseID", "courseID.no-match", "Course with this ID doesn't exist!");
+//        }
 
         if(dto.getKeywords() != null && dto.getKeywords().length() > 200) {
             e.rejectValue("keywords", "keywords.length", "Max total length of keywords is 200!");

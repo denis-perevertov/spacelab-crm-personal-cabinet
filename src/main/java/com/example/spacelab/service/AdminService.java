@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.util.List;
 
-public interface AdminService extends EntityFilterService<Admin>, UserDetailsService {
+public interface AdminService extends EntityFilterService<Admin> {
     List<Admin> getAdmins();
     List<Admin> getAdmins(FilterForm filters);
     Page<Admin> getAdmins(Pageable pageable);

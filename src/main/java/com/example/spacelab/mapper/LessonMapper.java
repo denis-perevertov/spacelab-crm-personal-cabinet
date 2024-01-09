@@ -1,9 +1,12 @@
 package com.example.spacelab.mapper;
 
+import com.example.spacelab.dto.admin.AdminAvatarDTO;
+import com.example.spacelab.dto.course.CourseLinkIconDTO;
 import com.example.spacelab.dto.lesson.LessonInfoDTO;
 import com.example.spacelab.dto.lesson.LessonListDTO;
 import com.example.spacelab.dto.lesson.LessonReportRowDTO;
 import com.example.spacelab.dto.lesson.LessonSaveBeforeStartDTO;
+import com.example.spacelab.dto.student.StudentAvatarDTO;
 import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.lesson.Lesson;
@@ -19,23 +22,29 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class LessonMapper {
+
     private final CourseService courseService;
     private final AdminService adminService;
+    private final StudentMapper studentMapper;
+
+
     public LessonListDTO  fromLessonToLessonListDTO(Lesson lesson) {
         LessonListDTO dto = new LessonListDTO();
         dto.setId(lesson.getId());
-        dto.setDatetime(lesson.getDatetime());
+        dto.setDatetime(lesson.getDatetime().atZone(ZoneId.of("UTC")));
 
         Course course = lesson.getCourse();
         if (course != null) {
             dto.setCourseId(course.getId());
             dto.setCourseName(course.getName());
+            dto.setCourseIcon(course.getIcon());
 
             if(course.getMentor() != null) {
                 dto.setMentorId(course.getMentor().getId());
@@ -84,45 +93,38 @@ public class LessonMapper {
     }
 
     public LessonInfoDTO fromLessonToLessonInfoDTO(Lesson lesson) {
-        LessonInfoDTO lessonInfoDTO = new LessonInfoDTO();
-        lessonInfoDTO.setId(lesson.getId());
-        lessonInfoDTO.setDatetime(lesson.getDatetime());
-        lessonInfoDTO.setStatus(lesson.getStatus().toString());
+        LessonInfoDTO dto = new LessonInfoDTO();
+        dto.setId(lesson.getId());
+        dto.setDatetime(lesson.getDatetime());
+        dto.setStatus(lesson.getStatus().toString());
 
-        List<LessonReportRowDTO> lessonReportRowDTOList = new ArrayList<>();
-        if (lesson.getLessonReport() != null && lesson.getLessonReport().getRows() != null) {
-            for (LessonReportRow lessonReportRow : lesson.getLessonReport().getRows()) {
-                LessonReportRowDTO lessonReportRowDTO = new LessonReportRowDTO();
-                
-                lessonReportRowDTO.setId(lessonReportRow.getId());
-                
-                lessonReportRowDTO.setStudent(lessonReportRow.getStudent().getDetails().getFirstName()+" "
-                        +lessonReportRow.getStudent().getDetails().getLastName()+" "
-                        +lessonReportRow.getStudent().getDetails().getFathersName());
-                
-                lessonReportRowDTO.setWasPresent(lessonReportRow.getWasPresent());
+        dto.setLink(lesson.getLink());
+        dto.setCourse(
+                new CourseLinkIconDTO(
+                        lesson.getCourse().getId(),
+                        lesson.getCourse().getName(),
+                        lesson.getCourse().getIcon()
+                )
+        );
 
-                List<String> taskNames = new ArrayList<>();
-                for (StudentTask currentTask : lessonReportRow.getStudent().getTasks()) {
-                    String taskName = currentTask.getTaskReference().getName();
-                    String taskPercent = "";
-                    if (currentTask.getPercentOfCompletion() != null ) {
-                        taskPercent = " ("+currentTask.getPercentOfCompletion()+"%)";
-                    }
-                taskNames.add(taskName + taskPercent); }
-                lessonReportRowDTO.setCurrentTasks(taskNames);
-                
-                lessonReportRowDTO.setHours(lessonReportRow.getHours());
-                lessonReportRowDTO.setHoursNote(lessonReportRow.getHoursNote());
-                lessonReportRowDTO.setComment(lessonReportRow.getComment());
-                lessonReportRowDTO.setRating(lessonReportRow.getRating());
-                lessonReportRowDTOList.add(lessonReportRowDTO);
-            }
-        }
-        lessonInfoDTO.setLessonReportRowList(lessonReportRowDTOList);
+        dto.setMentor(
+                new AdminAvatarDTO(
+                        lesson.getCourse().getMentor().getId(),
+                        lesson.getCourse().getMentor().getFullName(),
+                        lesson.getCourse().getMentor().getAvatar()
+                )
+        );
 
-        return lessonInfoDTO;
+        List<StudentAvatarDTO> students = lesson
+                .getCourse()
+                .getStudents()
+                .stream()
+                .map(studentMapper::fromStudentToAvatarDTO)
+                .toList();
 
+        dto.setStudents(students);
+
+        return dto;
     }
 
     public Lesson BeforeStartDTOtoLesson(LessonSaveBeforeStartDTO dto) {

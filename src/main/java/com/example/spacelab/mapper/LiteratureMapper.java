@@ -22,9 +22,9 @@ import java.util.Map;
 @Log
 @RequiredArgsConstructor
 public class LiteratureMapper {
-    private final LiteratureRepository literatureRepository;
-    private final CourseService courseService;
 
+    private final LiteratureRepository literatureRepository;
+//    private final CourseService courseService;
 
     public LiteratureListDTO fromLiteratureToListDTO(Literature literature) {
         LiteratureListDTO dto = new LiteratureListDTO();
@@ -125,7 +125,7 @@ public class LiteratureMapper {
             dto.setKeywords(literature.getKeywords());
             dto.setResource_link(literature.getResource_link());
             dto.setDescription(literature.getDescription());
-            dto.setImg(literature.getImg());
+            dto.setImg(literature.getThumbnail());
             dto.setVerified(literature.getIs_verified());
         } catch (Exception e) {
             log.severe("Mapping error: " + e.getMessage());
@@ -149,7 +149,7 @@ public class LiteratureMapper {
             dto.setKeywords(literature.getKeywords());
             dto.setResource_link(literature.getResource_link());
             dto.setDescription(literature.getDescription());
-            dto.setImg(literature.getImg());
+            dto.setThumbnail(literature.getThumbnail());
         } catch (Exception e) {
             log.severe("Mapping error: " + e.getMessage());
             log.warning("DTO: " + dto);
@@ -167,15 +167,15 @@ public class LiteratureMapper {
             entity.setId(dto.getId());
             entity.setName(dto.getName());
 
-            Course course = courseService.getCourseById(dto.getCourseID());
-            entity.setCourse(course);
+//            Course course = courseService.getCourseById(dto.getCourseID());
+//            entity.setCourse(course);
 
             entity.setType(dto.getType());
             entity.setAuthor((dto.getAuthor() != null && !dto.getAuthor().isEmpty()) ? dto.getAuthor() : "Unknown Author");
             entity.setKeywords(dto.getKeywords());
             entity.setDescription(dto.getDescription());
 
-            entity.setIs_verified(!dto.isNeeds_verification());
+            entity.setIs_verified(false);
 
             if(dto.getType() == LiteratureType.BOOK) {
                 entity.setResource_link(dto.getResource_file().getOriginalFilename());

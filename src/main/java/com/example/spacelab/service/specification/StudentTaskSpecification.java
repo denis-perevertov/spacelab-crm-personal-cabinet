@@ -20,7 +20,6 @@ public class StudentTaskSpecification implements Specification<StudentTask> {
 
     private final Long studentID;
     private final StudentTaskStatus status;
-    private final Long taskID;
     private final String taskName;
     private final Long courseID;
     private final LocalDate beginDate;
@@ -34,8 +33,6 @@ public class StudentTaskSpecification implements Specification<StudentTask> {
             predicates.add(cb.equal(studentTask.get("student").get("id"), studentID));
         if(status != null)
             predicates.add(cb.equal(studentTask.get("status"), status));
-        if(taskID != null)
-            predicates.add(cb.equal(studentTask.get("id"), taskID));
         if(taskName != null)
             predicates.add(cb.like(cb.lower(studentTask.get("taskReference").get("name")), "%"+taskName.toLowerCase()+"%"));
         if(courseID != null)

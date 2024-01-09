@@ -25,7 +25,7 @@ import java.util.List;
 @Data
 @Entity
 @Table(name="admins")
-public class Admin extends UserEntity implements UserDetails {
+public class Admin extends UserEntity {
 
     @Column(name = "first_name")
     private String firstName;
@@ -54,37 +54,8 @@ public class Admin extends UserEntity implements UserDetails {
     @OneToOne(mappedBy = "admin")
     private Settings settings;
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return this.getRole().getAuthorities().stream().map(SimpleGrantedAuthority::new).toList();
-    }
-
     public String getFullName() {
         return this.firstName + " " + this.lastName;
     }
 
-    @Override
-    public String getUsername() {
-        return this.email;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }

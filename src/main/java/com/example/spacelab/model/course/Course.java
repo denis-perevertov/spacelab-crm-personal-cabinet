@@ -27,7 +27,7 @@ public class Course {
 
     private String name;
 
-    private byte[] icon;
+    private String icon;
 
     @DateTimeFormat(pattern = "MM/dd/yyyy")
     private LocalDate beginningDate;

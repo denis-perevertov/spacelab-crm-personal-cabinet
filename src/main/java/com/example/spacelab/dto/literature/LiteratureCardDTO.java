@@ -28,7 +28,6 @@ public class LiteratureCardDTO {
     @Schema(example = "AuthorName")
     private String author_name;
 
-
     @Schema(example = "keyword1, keyword2")
     private String keywords;
 
@@ -39,10 +38,6 @@ public class LiteratureCardDTO {
     private String description;
 
     @Schema(example = "book_thumbnail.png")
-    private String img;
+    private String thumbnail;
 
-    public LiteratureCardDTO(Long id, String name) {
-        this.id = id;
-        this.name = name;
-    }
 }
