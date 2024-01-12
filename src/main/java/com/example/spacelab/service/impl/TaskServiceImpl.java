@@ -51,12 +51,32 @@ public class TaskServiceImpl implements TaskService {
 
     @Override
     public List<StudentTaskLessonDTO> getOpenStudentTasks(Student student) {
-        return null;
+        return student.getTasks().stream()
+                .filter(task -> task.getStatus().equals(StudentTaskStatus.UNLOCKED))
+                .map(task -> new StudentTaskLessonDTO(
+                        task.getId(),
+                        task.getTaskReference().getTaskIndex(),
+                        task.getTaskReference().getName(),
+                        task.getStatus().name(),
+                        task.getPercentOfCompletion()
+                ))
+                .toList();
     }
 
+    // up to 3 next tasks
     @Override
     public List<StudentTaskLessonDTO> getNextStudentTasks(Student student) {
-        return null;
+        return student.getTasks().stream()
+                .filter(task -> task.getStatus().equals(StudentTaskStatus.LOCKED))
+                .map(task -> new StudentTaskLessonDTO(
+                        task.getId(),
+                        task.getTaskReference().getTaskIndex(),
+                        task.getTaskReference().getName(),
+                        task.getStatus().name(),
+                        task.getPercentOfCompletion()
+                ))
+                .limit(3)
+                .toList();
     }
 
     @Override

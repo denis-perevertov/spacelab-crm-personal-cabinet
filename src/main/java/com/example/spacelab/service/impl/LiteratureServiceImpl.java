@@ -11,6 +11,7 @@ import com.example.spacelab.service.FileService;
 import com.example.spacelab.service.LiteratureService;
 import com.example.spacelab.service.specification.LiteratureSpecifications;
 import com.example.spacelab.util.AuthUtil;
+import com.example.spacelab.util.FilenameUtils;
 import com.example.spacelab.util.FilterForm;
 import com.example.spacelab.model.literature.LiteratureType;
 import lombok.RequiredArgsConstructor;
@@ -87,12 +88,15 @@ public class LiteratureServiceImpl implements LiteratureService{
 
         MultipartFile file = saveRequest.getResource_file();
         if(file != null && file.getSize() > 0) {
-            fileService.saveFile(file, "literature", "books");
+            String filename = FilenameUtils.generateFileName(file);
+            fileService.saveFile(file, filename, "literature", "books");
+            lit.setResource_link(filename);
         }
         MultipartFile thumbnail = saveRequest.getThumbnail();
         if(thumbnail != null && thumbnail.getSize() > 0) {
-            fileService.saveFile(thumbnail, "literature", "thumbnails");
-            lit.setThumbnail("/uploads/literature/thumbnails/" + saveRequest.getThumbnail().getOriginalFilename());
+            String filename = FilenameUtils.generateFileName(thumbnail);
+            fileService.saveFile(thumbnail, filename, "literature", "thumbnails");
+            lit.setThumbnail(filename);
         }
         return literatureRepository.save(lit);
     }

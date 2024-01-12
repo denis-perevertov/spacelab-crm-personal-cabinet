@@ -19,7 +19,7 @@ public class FileServiceImpl implements FileService {
     static final String FILE_UPLOAD_DIRECTORY = "uploads";
 
     @Override
-    public void saveFile(MultipartFile file, String... directories) throws IOException {
+    public void saveFile(MultipartFile file, String filename, String... directories) throws IOException {
         if(file != null && file.getSize() > 0) {
             StringBuilder sb = new StringBuilder(FILE_UPLOAD_DIRECTORY).append('/');
             for(String directory : directories) {
@@ -67,7 +67,24 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public boolean fileExists(String... directories) {
+    public void deleteFile(String fileName, String... directories) {
+        StringBuilder sb = new StringBuilder(FILE_UPLOAD_DIRECTORY).append('/');
+        for(String directory : directories) {
+            sb.append(directory).append('/');
+        }
+        Path directoryPath = Paths.get(FILE_UPLOAD_DIRECTORY, directories);
+        Path filePath = directoryPath.resolve(fileName);
+
+        File f = new File(filePath.toString());
+        if(f.delete()) {
+            log.info("file deleted");
+        } else {
+            log.info("could not delete file");
+        }
+    }
+
+    @Override
+    public boolean fileExists(String filename) {
         return false;
     }
 
