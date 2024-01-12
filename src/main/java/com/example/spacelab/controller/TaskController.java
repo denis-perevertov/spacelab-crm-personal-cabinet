@@ -12,10 +12,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -35,5 +32,11 @@ public class TaskController {
         Pageable pageable = PageRequest.of(page, size);
         Page<StudentTask> taskPage = taskService.getStudentTasks(filters, pageable);
         return ResponseEntity.ok(taskPage.map(taskMapper::fromStudentTaskToDTO));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getTaskInfo(@PathVariable Long id) {
+        StudentTask st = taskService.getStudentTask(id);
+        return ResponseEntity.ok(taskMapper.studentTaskToCardDTO(st));
     }
 }

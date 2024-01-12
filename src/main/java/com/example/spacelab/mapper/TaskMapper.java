@@ -359,4 +359,21 @@ public class TaskMapper {
                 .setLevel(task.getLevel())
                 .setStatus(task.getStatus());
     }
+
+    public StudentTaskCardDTO studentTaskToCardDTO(StudentTask studentTask) {
+        if(studentTask == null) return null;
+        else return new StudentTaskCardDTO(
+                studentTask.getId(),
+                fromTaskToInfoDTO(studentTask.getTaskReference()),
+                studentTaskToLinkDTO(studentTask.getParentTask())
+        );
+    }
+
+    public StudentTaskLinkDTO studentTaskToLinkDTO(StudentTask studentTask) {
+        if(studentTask == null) return null;
+        else return new StudentTaskLinkDTO(
+                studentTask.getId(),
+                studentTask.getTaskReference().getName()
+        );
+    }
 }
