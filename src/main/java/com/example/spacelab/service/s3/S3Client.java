@@ -19,7 +19,7 @@ import java.nio.file.Path;
 @RequiredArgsConstructor
 public class S3Client {
 
-    @Value("${aws.bucket.name}")
+    @Value("${application.aws.bucket.name}")
     private String bucketName;
 
     private final AmazonS3 s3client;

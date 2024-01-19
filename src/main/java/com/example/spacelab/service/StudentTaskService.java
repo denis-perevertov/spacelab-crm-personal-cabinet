@@ -1,6 +1,8 @@
 package com.example.spacelab.service;
 
 import com.example.spacelab.dto.student.StudentTaskLessonDTO;
+import com.example.spacelab.dto.task.StudentTaskPointDTO;
+import com.example.spacelab.integration.data.TaskResponse;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentTask;
@@ -23,6 +25,8 @@ public interface StudentTaskService {
 
     List<StudentTaskLessonDTO> getOpenStudentTasks(Student student);
     List<StudentTaskLessonDTO> getNextStudentTasks(Student student);
+
+    List<StudentTaskPointDTO> getStudentTaskProgressPoints(Long taskId);
 
     void createStudentTasksOnCourseTransfer(Student student, Course course);
 

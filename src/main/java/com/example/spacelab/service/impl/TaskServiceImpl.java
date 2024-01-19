@@ -1,7 +1,11 @@
 package com.example.spacelab.service.impl;
 
 import com.example.spacelab.dto.student.StudentTaskLessonDTO;
+import com.example.spacelab.dto.task.StudentTaskPointDTO;
+import com.example.spacelab.dto.task.StudentTaskTagDTO;
 import com.example.spacelab.exception.ResourceNotFoundException;
+import com.example.spacelab.integration.TaskTrackingService;
+import com.example.spacelab.integration.data.TaskResponse;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.student.Student;
@@ -35,8 +39,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
-import static java.util.Objects.isNull;
+import static java.util.Objects.*;
 
 @Service
 @Log4j2
@@ -48,6 +54,8 @@ public class TaskServiceImpl implements TaskService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
     private final TaskMapper mapper;
+
+    private final TaskTrackingService trackingService;
 
     @Override
     public List<StudentTaskLessonDTO> getOpenStudentTasks(Student student) {
@@ -77,6 +85,59 @@ public class TaskServiceImpl implements TaskService {
                 ))
                 .limit(3)
                 .toList();
+    }
+
+    @Override
+    public List<StudentTaskPointDTO> getStudentTaskProgressPoints(Long taskId) {
+        StudentTask st = getStudentTask(taskId);
+        List<TaskResponse> response = trackingService.getAllTasksFromList(st.getTaskTrackingId());
+        List<StudentTaskPointDTO> points = response.stream().map(this::toPointDTO).toList();
+        points.forEach(point -> {
+            if(point.getParentTaskId() != null && point.getParentTaskId() != 0) {
+                points.stream()
+                        .filter(p -> p.getId().equals(point.getParentTaskId()))
+                        .findAny()
+                        .get()
+                        .getSubpoints()
+                        .add(point);
+            }
+        });
+
+        return points.stream()
+                .filter(point -> (point.getParentTaskId() == null || point.getParentTaskId() == 0))
+                .toList();
+    }
+
+    private StudentTaskPointDTO toPointDTO(TaskResponse task) {
+        List<StudentTaskTagDTO> tags = new ArrayList<>();
+        if(task.tagIds() != null && task.tagIds().length > 0) {
+            for(Long tagId : task.tagIds()) {
+                tags.add(
+                        Optional.of(trackingService.getTagById(String.valueOf(tagId)))
+                                .map(
+                                        tag -> new StudentTaskTagDTO(
+                                                tag.id(),
+                                                tag.name(),
+                                                tag.color()
+                                        )
+                                ).get()
+                );
+            }
+        }
+        return new StudentTaskPointDTO(
+                task.id(),
+                task.parentTaskId(),
+                task.tasklistId(),
+                task.name(),
+                task.description(),
+                task.priority(),
+                task.progress(),
+                task.startDate(),
+                task.status(),
+                trackingService.getTotalTimeOnTask(String.valueOf(task.id())).taskTimeTotal().minutes(),
+                trackingService.getTotalTimeOnTask(String.valueOf(task.id())).taskTimeTotal().estimatedMinutes(),
+                tags,
+                new ArrayList<>());
     }
 
     @Override

@@ -364,8 +364,12 @@ public class TaskMapper {
         if(studentTask == null) return null;
         else return new StudentTaskCardDTO(
                 studentTask.getId(),
+                studentTask.getBeginDate(),
+                studentTask.getEndDate(),
                 fromTaskToInfoDTO(studentTask.getTaskReference()),
-                studentTaskToLinkDTO(studentTask.getParentTask())
+                studentTaskToLinkDTO(studentTask.getParentTask()),
+                studentTask.getTaskTrackingId(),
+                studentTask.getTaskReference().getCourse().getTrackingId()
         );
     }
 

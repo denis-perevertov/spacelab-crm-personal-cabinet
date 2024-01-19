@@ -1,5 +1,7 @@
 package com.example.spacelab.controller;
 
+import com.example.spacelab.integration.TaskTrackingService;
+import com.example.spacelab.integration.data.TaskRequest;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.student.StudentTask;
 import com.example.spacelab.model.task.Task;
@@ -23,6 +25,8 @@ public class TaskController {
     private final TaskService taskService;
     private final TaskMapper taskMapper;
 
+    private final TaskTrackingService trackingService;
+
     @GetMapping
     public ResponseEntity<?> getTasks(FilterForm filters,
                                       @RequestParam(required = false, defaultValue = "0") int page,
@@ -38,5 +42,38 @@ public class TaskController {
     public ResponseEntity<?> getTaskInfo(@PathVariable Long id) {
         StudentTask st = taskService.getStudentTask(id);
         return ResponseEntity.ok(taskMapper.studentTaskToCardDTO(st));
+    }
+
+    @GetMapping("/{id}/points")
+    public ResponseEntity<?> getTaskProgressPoints(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.getStudentTaskProgressPoints(id));
+    }
+
+    @PutMapping("/points/complete")
+    public ResponseEntity<?> completeProgressPoint(@RequestBody String pointId) {
+        trackingService.completeTask(pointId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/points/uncomplete")
+    public ResponseEntity<?> uncompleteProgressPoint(@RequestBody String pointId) {
+        trackingService.uncompleteTask(pointId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/points/create")
+    public ResponseEntity<?> createProgressPoint(@RequestBody TaskRequest request) {
+        return ResponseEntity.ok(trackingService.createTaskInTaskList(request));
+    }
+
+    @PutMapping("/points/edit")
+    public ResponseEntity<?> editProgressPoint(@RequestBody TaskRequest request) {
+        return ResponseEntity.ok(trackingService.updateTask(request));
+    }
+
+    @DeleteMapping("/points/delete")
+    public ResponseEntity<?> deleteProgressPoint(@RequestBody String pointId) {
+        trackingService.deleteTask(pointId);
+        return ResponseEntity.ok().build();
     }
 }

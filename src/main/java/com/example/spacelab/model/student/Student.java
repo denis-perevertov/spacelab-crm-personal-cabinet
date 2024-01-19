@@ -40,6 +40,8 @@ public class Student extends UserEntity implements UserDetails {
     @OneToMany(mappedBy = "student")
     private List<LessonReportRow> lessonData = new ArrayList<>();
 
+    private String taskTrackingProfileId;
+
     public String getFullName() {
         return String.join(" ",
                 this.details.getFirstName(),

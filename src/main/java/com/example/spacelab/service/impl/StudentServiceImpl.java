@@ -2,6 +2,9 @@ package com.example.spacelab.service.impl;
 
 import com.example.spacelab.dto.student.StudentRegisterRequest;
 import com.example.spacelab.exception.ResourceNotFoundException;
+import com.example.spacelab.integration.TaskTrackingService;
+import com.example.spacelab.integration.data.UserCreateRequest;
+import com.example.spacelab.integration.data.UserResponse;
 import com.example.spacelab.mapper.StudentMapper;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.course.Course;
@@ -54,6 +57,8 @@ public class StudentServiceImpl implements StudentService {
     private final TaskService taskService;
     private final FileService fileService;
 
+    private final TaskTrackingService trackingService;
+
     private final StudentMapper studentMapper;
     private final TaskMapper taskMapper;
 
@@ -91,7 +96,25 @@ public class StudentServiceImpl implements StudentService {
             fileService.saveFile(request.avatar(), "users");
             student.setAvatar("/uploads/users/" + request.avatar().getOriginalFilename());
         }
-        return studentRepository.save(student);
+        Student savedStudent = studentRepository.save(student);
+        log.info("registered & saved user, creating tracking profile");
+        UserResponse trackingUserResponse = trackingService.createTaskUser(new UserCreateRequest(
+            savedStudent.getDetails().getEmail(),
+            savedStudent.getDetails().getFirstName(),
+            savedStudent.getDetails().getLastName(),
+            false,
+            "Student",
+            savedStudent.getDetails().getGithubLink(),
+            savedStudent.getDetails().getLinkedinLink(),
+            null,
+            false,
+            false,
+            false,
+            false,
+            "account"
+        ));
+        savedStudent.setTaskTrackingProfileId(trackingUserResponse.id());
+        return studentRepository.save(savedStudent);
     }
 
     @Override

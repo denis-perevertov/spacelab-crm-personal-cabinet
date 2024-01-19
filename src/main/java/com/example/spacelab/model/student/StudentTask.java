@@ -50,4 +50,6 @@ public class StudentTask {
 
     private Integer percentOfCompletion;
 
+    private String taskTrackingId;
+
 }

@@ -92,22 +92,22 @@ public class StudentController {
         return ResponseEntity.ok(courseTaskList);
     }
 
-    // Регистрация студента ; для захода сюда защита не нужна
-    @PostMapping("/register")
-    public ResponseEntity<StudentDTO> registerStudent(@RequestBody StudentRegisterDTO dto,
-                                                      BindingResult bindingResult) {
-
-        studentValidator.validate(dto, bindingResult);
-
-        if(bindingResult.hasErrors()) {
-            Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-            throw new ObjectValidationException(errors);
-        }
-
-        Student student = studentService.registerStudent(studentMapper.fromRegisterDTOToStudent(dto));
-        return new ResponseEntity<>(studentMapper.fromStudentToDTO(student), HttpStatus.CREATED);
-    }
+//    // Регистрация студента ; для захода сюда защита не нужна
+//    @PostMapping("/register")
+//    public ResponseEntity<StudentDTO> registerStudent(@RequestBody StudentRegisterDTO dto,
+//                                                      BindingResult bindingResult) {
+//
+//        studentValidator.validate(dto, bindingResult);
+//
+//        if(bindingResult.hasErrors()) {
+//            Map<String, String> errors = new HashMap<>();
+//            bindingResult.getFieldErrors().forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
+//            throw new ObjectValidationException(errors);
+//        }
+//
+//        Student student = studentService.registerStudent(studentMapper.fromRegisterDTOToStudent(dto));
+//        return new ResponseEntity<>(studentMapper.fromStudentToDTO(student), HttpStatus.CREATED);
+//    }
 
     // Удаление студента
     // todo
