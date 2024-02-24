@@ -1,47 +1,37 @@
 package com.example.spacelab.service.impl;
 
-import com.example.spacelab.dto.student.StudentRegisterRequest;
+import com.example.spacelab.dto.student.*;
 import com.example.spacelab.exception.ResourceNotFoundException;
+import com.example.spacelab.exception.TeamworkException;
 import com.example.spacelab.integration.TaskTrackingService;
-import com.example.spacelab.integration.data.UserCreateRequest;
-import com.example.spacelab.integration.data.UserResponse;
+import com.example.spacelab.integration.data.*;
 import com.example.spacelab.mapper.StudentMapper;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.course.Course;
+import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.lesson.LessonReportRow;
-import com.example.spacelab.model.student.StudentInviteRequest;
-import com.example.spacelab.model.student.Student;
-import com.example.spacelab.model.student.StudentTask;
-import com.example.spacelab.dto.student.StudentCardDTO;
-import com.example.spacelab.model.task.Task;
+import com.example.spacelab.model.lesson.LessonStatus;
+import com.example.spacelab.model.student.*;
 import com.example.spacelab.repository.*;
 import com.example.spacelab.service.FileService;
 import com.example.spacelab.service.StudentService;
 import com.example.spacelab.service.TaskService;
-import com.example.spacelab.service.specification.StudentSpecifications;
-import com.example.spacelab.util.FilterForm;
-import com.example.spacelab.model.student.StudentAccountStatus;
-import com.example.spacelab.model.student.StudentTaskStatus;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
+import com.example.spacelab.util.FilenameUtils;
+import com.example.spacelab.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -50,9 +40,11 @@ public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
+    private final LessonRepository lessonRepository;
     private final InviteStudentRequestRepository inviteRepository;
     private final StudentTaskRepository studentTaskRepository;
     private final UserRoleRepository userRoleRepository;
+    private final LessonReportRowRepository lessonReportRowRepository;
 
     private final TaskService taskService;
     private final FileService fileService;
@@ -84,6 +76,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     @Override
+    @Transactional
     public Student registerStudent(StudentRegisterRequest request) throws IOException {
         log.info("registering student through request from website");
         Student student = studentMapper.fromRegisterRequestToStudent(request);
@@ -93,28 +86,69 @@ public class StudentServiceImpl implements StudentService {
         student.setPassword(passwordEncoder.encode(request.password()));
         if(request.avatar().getSize() > 0) {
             log.info("saving user avatar");
-            fileService.saveFile(request.avatar(), "users");
-            student.setAvatar("/uploads/users/" + request.avatar().getOriginalFilename());
+            String filename = FilenameUtils.generateFileName(request.avatar());
+            fileService.saveFile(request.avatar(), filename, "students");
+            student.setAvatar(filename);
         }
         Student savedStudent = studentRepository.save(student);
-        log.info("registered & saved user, creating tracking profile");
+        log.info("registered & saved user");
+        inviteRepository.deleteByToken(request.inviteToken());
+        log.info("deleted used token");
+        try {
+            createTrackingUserProfile(savedStudent);
+            if(
+                    ValidationUtils.fieldIsNotEmpty(savedStudent.getTaskTrackingProfileId())
+                    && ValidationUtils.fieldIsNotNull(savedStudent.getCourse())
+                    && ValidationUtils.fieldIsNotEmpty(savedStudent.getCourse().getTrackingId())
+            ) {
+                addStudentToProject(
+                        savedStudent.getTaskTrackingProfileId(),
+                        savedStudent.getCourse().getTrackingId()
+                );
+            }
+
+        } catch (TeamworkException ex) {
+            log.error("could not create teamwork user: {}", ex.getMessage());
+        }
+        return savedStudent;
+    }
+
+    @Async
+    private void createTrackingUserProfile(Student savedStudent) {
+        log.info("creating tracking profile for user");
         UserResponse trackingUserResponse = trackingService.createTaskUser(new UserCreateRequest(
-            savedStudent.getDetails().getEmail(),
-            savedStudent.getDetails().getFirstName(),
-            savedStudent.getDetails().getLastName(),
-            false,
-            "Student",
-            savedStudent.getDetails().getGithubLink(),
-            savedStudent.getDetails().getLinkedinLink(),
-            null,
-            false,
-            false,
-            false,
-            false,
-            "account"
+                savedStudent.getDetails().getEmail(),
+                savedStudent.getDetails().getFirstName(),
+                savedStudent.getDetails().getLastName(),
+                false,
+                "Student",
+                savedStudent.getDetails().getGithubLink(),
+                savedStudent.getDetails().getLinkedinLink(),
+                null,
+                false,
+                false,
+                false,
+                false,
+                "account"
         ));
         savedStudent.setTaskTrackingProfileId(trackingUserResponse.id());
-        return studentRepository.save(savedStudent);
+        studentRepository.save(savedStudent);
+    }
+
+    @Async
+    private void addStudentToProject(String studentId, String projectId) {
+        log.info("Adding student(id:{}) to project(id:{})", studentId, projectId);
+        UserAddResponse response = trackingService.addUsersToProject(new UserAddRequest(projectId, new Integer[]{Integer.parseInt(studentId)}));
+        log.info(response.toString());
+    }
+
+    @Async
+    private void removeStudentFromProject(String studentId, String projectId) {
+        log.info("Removing student(id:{}) from project(id:{})", studentId, projectId);
+        UserRemoveResponse response = trackingService.removeUsersFromProject(new UserRemoveRequest(projectId, new UserRemoveRequest.Remove(
+                studentId
+        )));
+        log.info(response.toString());
     }
 
     @Override
@@ -123,66 +157,130 @@ public class StudentServiceImpl implements StudentService {
         return studentMapper.fromStudentToCardDTO(student);
     }
 
-    /*
-     = = = = = Задания студента = = = = =
-     */
+    @Override
+    public TimeTotalResponse getStudentTotalLearningTime(Long studentId) {
+        Student st = getStudentById(studentId);
+        if(ValidationUtils.fieldIsEmpty(st.getTaskTrackingProfileId())) {
+            return null;
+        }
+        else {
+            return trackingService.getUserTotalTime(st.getTaskTrackingProfileId());
+        }
+    }
 
+    @Override
+    public TimeTotalResponse getStudentRecentLearningTime(Long studentId) {
+        Student st = getStudentById(studentId);
+        if(ValidationUtils.fieldIsEmpty(st.getTaskTrackingProfileId())) {
+            return null;
+        }
+        else {
+            return trackingService.getUserTotalTimeRecent(st.getTaskTrackingProfileId());
+        }
+    }
 
-//    @Override
-//    public List<StudentTask> getStudentTasks(Long studentID) {
-//        log.info("Getting tasks of student w/ ID: " + studentID);
-//        return studentTaskRepository.findStudentTasks(studentID);
-//    }
-//
-//    @Override
-//    public List<StudentTask> getStudentTasks(Long studentID, StudentTaskStatus status) {
-//        log.info("Getting tasks(STATUS:"+status.toString()+") of student w/ ID: " + studentID);
-//        return studentTaskRepository.findStudentTasksWithStatus(studentID, status);
-//    }
-//
-//    @Override
-//    public Page<StudentTask> getStudentTasks(Long studentID, StudentTaskStatus status, Pageable pageable) {
-//        log.info("Getting "+pageable.getPageSize()+" tasks(STATUS:"+status.toString()+")" +
-//                " of student w/ ID: " + studentID +
-//                " || page " + pageable.getPageNumber());
-//        return studentTaskRepository.findStudentTasksWithStatusAndPage(studentID, status, pageable);
-//    }
-//
-//    @Override
-//    public Page<StudentTask> getStudentTasks(Specification<StudentTask> spec, Pageable pageable) {
-//        return studentTaskRepository.findAll(spec, pageable);
-//    }
-//
-//    @Override
-//    public StudentTask getStudentTask(Long taskID) {
-//        log.info("Getting student task with taskID: " + taskID);
-//        StudentTask task = studentTaskRepository.findById(taskID).orElseThrow(() -> new ResourceNotFoundException("Student task not found", StudentTask.class));
-//        return task;
-//    }
-//
-//    @Override
-//    public void createStudentTasksOnCourseTransfer(Student student, Course course) {
-//
-//        List<Task> courseTaskList = course.getTasks();
-//
-//        // clear student tasks which were not completed
-//        List<StudentTask> oldStudentTasks = student.getTasks();
-//        oldStudentTasks.stream()
-//                .filter(studentTask -> studentTask.getStatus() != StudentTaskStatus.COMPLETED)
-//                .forEach(studentTaskRepository::delete);
-//
-//        // create new task snapshots for student
-//
-//
-//    }
-//
-//    @Override
-//    public void completeStudentTask(Long taskID) {
-//
-//    }
+    @Override
+    public Optional<StudentTask> getStudentLastCompletedTask(Long studentId) {
+        Student st = getStudentById(studentId);
+        return st.getTasks()
+                .stream()
+                .filter(t -> t.getStatus().equals(StudentTaskStatus.COMPLETED))
+                .sorted(Comparator.comparing(StudentTask::getEndDate).reversed())
+                .limit(1)
+                .findAny();
+    }
+
+    @Override
+    public long getStudentCompletedTaskAmount(Long studentId) {
+        Student st = getStudentById(studentId);
+        return st.getTasks()
+                .stream()
+                .filter(t -> t.getStatus().equals(StudentTaskStatus.COMPLETED))
+                .count();
+    }
+
+    @Override
+    public Optional<Lesson> getStudentLastVisitedLesson(Long studentId) {
+        Student st = getStudentById(studentId);
+        return lessonRepository.findAllByCourse(st.getCourse())
+                .stream()
+                .filter(l -> l.getStatus().equals(LessonStatus.COMPLETED))
+                .sorted(Comparator.comparing(Lesson::getDatetime).reversed())
+                .limit(1)
+                .findAny();
+    }
+
+    @Override
+    public Optional<Lesson> getStudentNextLesson(Long studentId) {
+        Student st = getStudentById(studentId);
+        return lessonRepository.findAllByCourse(st.getCourse())
+                .stream()
+                .filter(l -> l.getStatus().equals(LessonStatus.PLANNED))
+                .sorted(Comparator.comparing(Lesson::getDatetime))
+                .limit(1)
+                .findAny();
+    }
+
+    // get lesson report row
+    @Override
+    public long getStudentVisitedLessonAmount(Long studentId) {
+        Student st = getStudentById(studentId);
+        return lessonReportRowRepository.findAllByStudent(st)
+                .stream()
+                .filter(LessonReportRow::getWasPresent)
+                .count();
+    }
+
+    @Override
+    public long getStudentSkippedLessonAmount(Long studentId) {
+        Student st = getStudentById(studentId);
+        return lessonReportRowRepository.findAllByStudent(st)
+                .stream()
+                .filter(r -> !r.getWasPresent())
+                .count();
+    }
+
+    @Override
+    public void saveProfileDetails(Long studentId, StudentDetailsDTO dto) {
+        Student st = getStudentById(studentId);
+        StudentDetails details = st.getDetails();
+        details.setBirthdate(dto.birthdate());
+        details.setPhone(dto.phone());
+        details.setEmail(dto.email());
+        details.setEducationLevel(dto.educationLevel());
+        details.setEnglishLevel(dto.englishLevel());
+        details.setWorkStatus(dto.workStatus());
+        studentRepository.save(st);
+        log.info("profile details saved");
+    }
+
+    @Override
+    public void saveStudentName(Long studentId, StudentNameDTO dto) {
+        Student st = getStudentById(studentId);
+        StudentDetails details = st.getDetails();
+        details.setFirstName(dto.firstName());
+        details.setFathersName(dto.fathersName());
+        details.setLastName(dto.lastName());
+        studentRepository.save(st);
+        log.info("profile name saved");
+    }
+
+    @Override
+    public String saveStudentAvatar(Long studentId, StudentAvatarEditRequest request) throws IOException {
+        Student st = getStudentById(studentId);
+        log.info("saving user avatar");
+        String filename = FilenameUtils.generateFileName(request.avatar());
+        fileService.saveFile(request.avatar(), filename, "students");
+        st.setAvatar(filename);
+        studentRepository.save(st);
+        log.info("user avatar saved");
+        return filename;
+    }
+
     @Override
     public List<LessonReportRow> getStudentLessonData(Long studentID) {
-        return getStudentById(studentID).getLessonData();
+//        return getStudentById(studentID).getLessonData();
+        return new ArrayList<>();
     }
 
     @Override
@@ -193,6 +291,6 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return studentRepository.findByDetailsEmail(username).orElseThrow(() -> new EntityNotFoundException("Student not found!"));
+        return studentRepository.findByDetailsEmail(username).orElseThrow(() -> new UsernameNotFoundException("Student not found!"));
     }
 }

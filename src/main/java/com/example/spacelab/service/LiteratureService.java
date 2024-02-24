@@ -1,8 +1,6 @@
 package com.example.spacelab.service;
 
 import com.example.spacelab.dto.literature.LiteratureSaveDTO;
-import com.example.spacelab.model.course.Course;
-import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.literature.Literature;
 import com.example.spacelab.util.FilterForm;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,5 @@
 package com.example.spacelab.repository;
 
-import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.literature.Literature;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;

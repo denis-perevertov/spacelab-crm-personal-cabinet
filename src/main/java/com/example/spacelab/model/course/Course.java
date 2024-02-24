@@ -1,23 +1,27 @@
 package com.example.spacelab.model.course;
 
+import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.literature.Literature;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.task.Task;
-import com.example.spacelab.model.admin.Admin;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.ToString;
+import lombok.experimental.Accessors;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Entity
 @Table(name="courses")
-@NoArgsConstructor
+@Accessors(chain = true)
 public class Course {
 
     @Id
@@ -26,7 +30,6 @@ public class Course {
     private Long id;
 
     private String trackingId;
-
 
     private String name;
 
@@ -47,15 +50,15 @@ public class Course {
 
     @ToString.Exclude
     @OneToMany(mappedBy = "course")
-    private List<Student> students = new ArrayList<>();
-
-    @ToString.Exclude
-    @OneToMany(mappedBy = "course", cascade = CascadeType.ALL)
-    private List<Task> tasks = new ArrayList<>();
+    private Set<Student> students = new HashSet<>();
 
     @ToString.Exclude
     @OneToMany(mappedBy = "course")
-    private List<Literature> literature = new ArrayList<>();
+    private Set<Task> tasks = new HashSet<>();
+
+    @ToString.Exclude
+    @OneToMany(mappedBy = "course")
+    private Set<Literature> literature = new HashSet<>();
 
     @Embedded
     private CourseInfo courseInfo = new CourseInfo();
@@ -63,9 +66,16 @@ public class Course {
     @Enumerated(value = EnumType.STRING)
     private CourseStatus status;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Course course = (Course) o;
+        return Objects.equals(id, course.id) && Objects.equals(trackingId, course.trackingId) && Objects.equals(name, course.name) && Objects.equals(icon, course.icon) && Objects.equals(beginningDate, course.beginningDate) && Objects.equals(endDate, course.endDate) && Objects.equals(courseInfo, course.courseInfo) && status == course.status;
+    }
 
-    public Course(Long id, String name) {
-        this.id = id;
-        this.name = name;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, trackingId, name, icon, beginningDate, endDate, courseInfo, status);
     }
 }

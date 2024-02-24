@@ -1,19 +1,16 @@
 package com.example.spacelab.validator;
 
-import com.example.spacelab.dto.student.StudentTaskUnlockRequest;
-import com.example.spacelab.model.student.Student;
+import com.example.spacelab.dto.student.StudentAvatarEditRequest;
 import com.example.spacelab.dto.student.StudentEditDTO;
-import com.example.spacelab.model.task.Task;
+import com.example.spacelab.model.student.Student;
 import com.example.spacelab.repository.StudentRepository;
 import com.example.spacelab.repository.TaskRepository;
+import com.example.spacelab.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.BindingResult;
 import org.springframework.validation.Errors;
-import org.springframework.validation.FieldError;
 import org.springframework.validation.Validator;
-
-import java.util.Objects;
+import org.springframework.web.multipart.MultipartFile;
 
 @Component
 @RequiredArgsConstructor
@@ -73,19 +70,24 @@ public class StudentValidator implements Validator {
 
     }
 
-    public void validateNewTaskForStudent(StudentTaskUnlockRequest request, BindingResult bindingResult) {
-        Task task = taskRepository.findById(request.taskID()).orElse(null);
-        if(task != null) {
-            Student student = studentRepository.findById(request.studentID()).orElse(null);
-            if(student != null) {
-                if(task.getActiveStudents().contains(student)) {
-                    bindingResult.addError(new FieldError("StudentTaskUnlockRequest", "taskID", "student already has this task"));
-                }
-            } else {
-                bindingResult.addError(new FieldError("StudentTaskUnlockRequest", "studentID", "this student doesn't exist"));
+    public void validateStudentEmailChange(String newEmail, Errors e) {
+
+    }
+
+    public void validateStudentAvatar(StudentAvatarEditRequest request, Errors e) {
+        MultipartFile avatar = request.avatar();
+        if(avatar.isEmpty()) {
+            e.rejectValue("avatar", "avatar.empty", "validation.file.upload");
+        }
+        else if(avatar.getSize() > ValidationUtils.MAX_IMAGE_SIZE) {
+            e.rejectValue("avatar", "avatar.max-size", "validation.file.max-size");
+        }
+        else {
+            String filename = avatar.getOriginalFilename();
+            String extension = filename.substring(filename.lastIndexOf(".")+1);
+            if(!ValidationUtils.ALLOWED_IMAGE_FORMATS.contains(extension)) {
+                e.rejectValue("avatar", "avatar.format", "validation.file.formats.allowed");
             }
-        } else {
-            bindingResult.addError(new FieldError("StudentTaskUnlockRequest", "taskID", "this task doesn't exist"));
         }
     }
 }

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.ZonedDateTime;
 
 @Data
 public class StudentTaskDTO {
@@ -17,9 +17,9 @@ public class StudentTaskDTO {
     @Schema(example = "3")
     private Long taskID;
     @JsonFormat(pattern = "dd.MM.yyyy")
-    private LocalDate beginDate;
+    private ZonedDateTime beginDate;
     @JsonFormat(pattern = "dd.MM.yyyy")
-    private LocalDate endDate;
+    private ZonedDateTime endDate;
     @Schema(example = "ACTIVE")
     private String status;
 }

@@ -1,30 +1,20 @@
 package com.example.spacelab.controller.auth;
 
 import com.example.spacelab.config.JwtService;
-import com.example.spacelab.config.SecurityConfig;
-import com.example.spacelab.dto.admin.AdminDTO;
-import com.example.spacelab.dto.admin.AdminLoginInfoDTO;
-import com.example.spacelab.dto.student.StudentRegisterDTO;
 import com.example.spacelab.dto.student.StudentRegisterRequest;
-import com.example.spacelab.exception.ErrorMessage;
-import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.exception.TokenException;
-import com.example.spacelab.mapper.AdminMapper;
 import com.example.spacelab.mapper.StudentMapper;
 import com.example.spacelab.model.RefreshToken;
-import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentInviteRequest;
 import com.example.spacelab.model.student.StudentInviteRequestDto;
 import com.example.spacelab.repository.InviteStudentRequestRepository;
 import com.example.spacelab.repository.StudentRepository;
-import com.example.spacelab.service.AdminService;
 import com.example.spacelab.service.RefreshTokenService;
 import com.example.spacelab.service.StudentService;
 import com.example.spacelab.util.AuthRequest;
 import com.example.spacelab.util.AuthResponse;
 import com.example.spacelab.util.RefreshTokenRequest;
-import io.jsonwebtoken.ExpiredJwtException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -41,9 +31,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
@@ -82,8 +70,6 @@ public class AuthController {
                     new UsernamePasswordAuthenticationToken(authRequest.username(), authRequest.password())
             );
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info(authentication.toString());
-            log.info(SecurityContextHolder.getContext().getAuthentication().toString());
             if(authentication.isAuthenticated()) {
                 log.info("is authenticated!");
                 String access_token = jwtService.generateToken(authRequest.username());
@@ -92,19 +78,11 @@ public class AuthController {
             }
             else {
                 log.error("Incorrect auth request!");
-                throw new ResourceNotFoundException("Incorrect authentication request");
+                throw new BadCredentialsException("Incorrect authentication request");
             }
         } catch (BadCredentialsException ex) {
             log.error("bad credentials!");
-            throw new ResourceNotFoundException("Incorrect authentication request");
-        } catch (EntityNotFoundException b) {
-            log.error("login entity not found!");
-            throw new ResourceNotFoundException("Incorrect authentication request");
-        } catch (Exception e) {
-            log.error("Some unknown exception during authencation");
-            log.error(e.getClass().getName());
-            log.error(e.getMessage());
-            throw new ResourceNotFoundException("Incorrect authentication request");
+            throw new BadCredentialsException("Incorrect authentication request");
         }
     }
 
@@ -144,7 +122,7 @@ public class AuthController {
                 inviteData.getLastName(),
                 inviteData.getEmail(),
                 inviteData.getPhone(),
-                inviteData.getCourse().getId()
+                inviteData.getCourse() != null ? inviteData.getCourse().getId() : -1
         );
         return ResponseEntity.ok(dto);
     }

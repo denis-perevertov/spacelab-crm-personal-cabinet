@@ -1,14 +1,11 @@
 package com.example.spacelab.dto.task;
 
-import com.example.spacelab.dto.course.CourseListDTO;
 import com.example.spacelab.model.task.TaskLevel;
 import com.example.spacelab.model.task.TaskStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.Map;
 
 @Data
 @NoArgsConstructor

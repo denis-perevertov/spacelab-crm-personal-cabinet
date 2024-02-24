@@ -31,7 +31,7 @@ public class JwtService {
                 .setClaims(claims)
                 .setSubject(userName)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + (1000 * 60 * 60)))
+                .setExpiration(new Date(System.currentTimeMillis() + (1000 * 60 * 60 * 24)))
                 .signWith(getSignKey(), SignatureAlgorithm.HS256).compact();
     }
 
@@ -41,7 +41,7 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        log.info("extracting username from token: ", token);
+        log.info("extracting username from token: {}", token);
         return extractClaim(token, Claims::getSubject);
     }
     public Date extractExpiration(String token) {

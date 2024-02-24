@@ -12,7 +12,6 @@ import com.example.spacelab.model.literature.Literature;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.task.Task;
 import com.example.spacelab.repository.*;
-import com.example.spacelab.util.ProgramDuration;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,19 +100,19 @@ public class CourseMapper {
         return new PageImpl<>(dtos, coursePage.getPageable(), coursePage.getTotalElements());
     }
 
-    public CourseInfoDTO fromCourseToInfoDTO(Course course) {
-        CourseInfoDTO dto = new CourseInfoDTO();
-        CourseInfo courseInfo = course.getCourseInfo();
-        dto.setDescription(courseInfo.getMain_description());
-        dto.setTopics(courseInfo.getTopics());
-        dto.setSettings(new CourseSettingsDTO(
-                courseInfo.getCompletionTime(),
-                courseInfo.getCompletionTimeUnit(),
-                courseInfo.getGroupSize(),
-                courseInfo.getHoursNorm()
-        ));
-        return dto;
-    }
+//    public CourseInfoDTO fromCourseToInfoDTO(Course course) {
+//        CourseInfoDTO dto = new CourseInfoDTO();
+//        CourseInfo courseInfo = course.getCourseInfo();
+//        dto.setDescription(courseInfo.getMain_description());
+//        dto.setTopics(courseInfo.getTopics());
+//        dto.setSettings(new CourseSettingsDTO(
+//                courseInfo.getCompletionTime(),
+//                courseInfo.getCompletionTimeUnit(),
+//                courseInfo.getGroupSize(),
+//                courseInfo.getHoursNorm()
+//        ));
+//        return dto;
+//    }
 
 
     public CourseCardDTO fromCardDTOtoCourse(Course course) {
@@ -218,7 +217,7 @@ public class CourseMapper {
         }
 
 
-        List<Student> students = new ArrayList<>();
+        Set<Student> students = new HashSet<>();
         if (courseDTO.getStudents() != null && !courseDTO.getStudents().isEmpty()) {
             for (Long studentId : courseDTO.getStudents()) {
                 students.add(studentRepository.findById(studentId).orElse(null));
@@ -235,7 +234,7 @@ public class CourseMapper {
         }
 //        course.setTasks(tasks);
 
-        List <Literature > literature = new ArrayList<>();
+        Set <Literature> literature = new HashSet<>();
         if (courseDTO.getLiterature() != null && !courseDTO.getLiterature().isEmpty()) {
             for (Long literatureId : courseDTO.getLiterature()) {
                 literature.add(literatureRepository.findById(literatureId).orElse(null));
@@ -265,77 +264,82 @@ public class CourseMapper {
     }
 
 
-    public CourseEditDTO fromCourseToEditDTO(Course course) {
-        CourseEditDTO dto = new CourseEditDTO();
-
-        try {
-            dto.setId(course.getId());
-            dto.setName(course.getName());
-            dto.setInfo(
-                new CourseInfoDTO(
-                        course.getCourseInfo().getMain_description(),
-                        course.getCourseInfo().getTopics(),
-                        new CourseSettingsDTO(
-                                course.getCourseInfo().getCompletionTime(),
-                                course.getCourseInfo().getCompletionTimeUnit(),
-                                course.getCourseInfo().getGroupSize(),
-                                course.getCourseInfo().getHoursNorm()
-                        )
-                )
-            );
-            Admin courseMentor = course.getMentor();
-            Admin courseManager = course.getManager();
-            dto.setMembers(
-                new CourseMembersDTO(
-                        courseMentor != null ? new AdminAvatarDTO(
-                                courseMentor.getId(),
-                                courseMentor.getFullName(),
-                                courseMentor.getAvatar()
-                        ) : null,
-                        courseManager != null ? new AdminAvatarDTO(
-                                courseManager.getId(),
-                                courseManager.getFullName(),
-                                courseManager.getAvatar()
-                        ) : null,
-                        course.getStudents().stream().map(student -> new StudentAvatarDTO(
-                                student.getId(),
-                                student.getFullName(),
-                                student.getAvatar()
-                        )).toList()
-                )
-            );
-            dto.setStructure(
-                    new CourseTaskStructureDTO(
-                            taskRepository.getCourseTasks(course.getId())
-                                    .stream()
-                                    .map(this::fromTaskToCourseDTO)
-                                    .sorted(Comparator.comparing(TaskCourseDTO::getTaskIndex))
-                                    .toList()
-                    )
-            );
-
-
-        } catch (Exception e) {
-            throw new MappingException(e.getMessage());
-        }
-
-        return dto;
-    }
+//    public CourseEditDTO fromCourseToEditDTO(Course course) {
+//        CourseEditDTO dto = new CourseEditDTO();
+//
+//        try {
+//            dto.setId(course.getId());
+//            dto.setName(course.getName());
+//            dto.setInfo(
+//                new CourseInfoDTO(
+//                        course.getCourseInfo().getMain_description(),
+//                        course.getCourseInfo().getTopics(),
+//                        new CourseSettingsDTO(
+//                                course.getCourseInfo().getCompletionTime(),
+//                                course.getCourseInfo().getCompletionTimeUnit(),
+//                                course.getCourseInfo().getGroupSize(),
+//                                course.getCourseInfo().getHoursNorm()
+//                        )
+//                )
+//            );
+//            Admin courseMentor = course.getMentor();
+//            Admin courseManager = course.getManager();
+//            dto.setMembers(
+//                new CourseMembersDTO(
+//                        courseMentor != null ? new AdminAvatarDTO(
+//                                courseMentor.getId(),
+//                                courseMentor.getFullName(),
+//                                courseMentor.getAvatar()
+//                        ) : null,
+//                        courseManager != null ? new AdminAvatarDTO(
+//                                courseManager.getId(),
+//                                courseManager.getFullName(),
+//                                courseManager.getAvatar()
+//                        ) : null,
+//                        course.getStudents().stream().map(student -> new StudentAvatarDTO(
+//                                student.getId(),
+//                                student.getFullName(),
+//                                student.getAvatar()
+//                        )).toList()
+//                )
+//            );
+//            dto.setStructure(
+//                    new CourseTaskStructureDTO(
+//                            taskRepository.getCourseTasks(course.getId())
+//                                    .stream()
+//                                    .map(this::fromTaskToCourseDTO)
+//                                    .sorted(Comparator.comparing(TaskCourseDTO::getTaskIndex))
+//                                    .toList()
+//                    )
+//            );
+//
+//
+//        } catch (Exception e) {
+//            throw new MappingException(e.getMessage());
+//        }
+//
+//        return dto;
+//    }
 
     public CourseInfoPageDTO fromCourseToInfoPageDTO(Course course) {
         CourseInfoPageDTO dto = new CourseInfoPageDTO();
 
         try {
+            CourseInfo courseInfo = course.getCourseInfo();
             dto.setName(course.getName());
+            dto.setIcon(course.getIcon());
+            dto.setStatus(course.getStatus());
             dto.setInfo(
                     new CourseInfoDTO(
-                            course.getCourseInfo().getMain_description(),
-                            course.getCourseInfo().getTopics(),
+                            courseInfo.getMain_description(),
+                            courseInfo.getTopics(),
                             new CourseSettingsDTO(
-                                    course.getCourseInfo().getCompletionTime(),
-                                    course.getCourseInfo().getCompletionTimeUnit(),
-                                    course.getCourseInfo().getGroupSize(),
-                                    course.getCourseInfo().getHoursNorm()
+                                    courseInfo.getBeginDate(),
+                                    courseInfo.getCompletionTime(),
+                                    courseInfo.getCompletionTimeUnit(),
+                                    courseInfo.getGroupSize(),
+                                    courseInfo.getHoursNorm(),
+                                    courseInfo.getLessonInterval()
                             )
                     )
             );
@@ -371,7 +375,6 @@ public class CourseMapper {
             );
 
         } catch (Exception e) {
-            log.error(e.getMessage());
             throw new MappingException(e.getMessage());
         }
 
@@ -414,6 +417,8 @@ public class CourseMapper {
                 task.getId(),
                 task.getTaskIndex(),
                 task.getName(),
+                task.getLevel(),
+                task.getStatus(),
                 task.getSubtasks().stream().map(this::fromTaskToCourseDTO).toList()
         );
     }

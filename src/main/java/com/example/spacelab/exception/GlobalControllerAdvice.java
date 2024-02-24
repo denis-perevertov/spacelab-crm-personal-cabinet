@@ -1,22 +1,13 @@
 package com.example.spacelab.exception;
 
-import com.example.spacelab.model.admin.Admin;
 import io.jsonwebtoken.ExpiredJwtException;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.java.Log;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -58,6 +49,14 @@ public class GlobalControllerAdvice {
     public ResponseEntity<ErrorMessage> expiredTokenHandler(ExpiredJwtException ex) {
         return new ResponseEntity<>(
                 new ErrorMessage("Token expired", HttpStatus.UNAUTHORIZED.value(), Map.of("token", ex.getMessage())),
+                HttpStatus.UNAUTHORIZED
+        );
+    }
+    @ExceptionHandler(BadCredentialsException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ResponseEntity<ErrorMessage> badCredentialsInTokenHandler(BadCredentialsException ex) {
+        return new ResponseEntity<>(
+                new ErrorMessage("Bad credentials!", HttpStatus.UNAUTHORIZED.value(), Map.of("msg", ex.getMessage())),
                 HttpStatus.UNAUTHORIZED
         );
     }

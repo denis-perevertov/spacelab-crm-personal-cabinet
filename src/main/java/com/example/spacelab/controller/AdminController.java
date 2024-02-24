@@ -2,24 +2,18 @@ package com.example.spacelab.controller;
 
 import com.example.spacelab.dto.SelectSearchDTO;
 import com.example.spacelab.dto.admin.AdminContactDTO;
-import com.example.spacelab.exception.ErrorMessage;
-import com.example.spacelab.exception.ObjectValidationException;
-import com.example.spacelab.exception.ResourceNotFoundException;
-import com.example.spacelab.mapper.AdminMapper;
-import com.example.spacelab.model.admin.Admin;
-import com.example.spacelab.dto.admin.AdminEditDTO;
-import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.dto.admin.AdminDTO;
 import com.example.spacelab.dto.admin.AdminEditDTO;
+import com.example.spacelab.exception.ErrorMessage;
+import com.example.spacelab.exception.ObjectValidationException;
+import com.example.spacelab.mapper.AdminMapper;
+import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.service.AdminService;
-import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilterForm;
 import com.example.spacelab.validator.AdminValidator;
-import com.example.spacelab.exception.ValidationErrorMessage;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -32,7 +26,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,7 +63,7 @@ public class AdminController {
         Page<AdminDTO> adminList;
         Page<Admin> adminPage;
         Pageable pageable = PageRequest.of(page, size, Sort.Direction.ASC, "id");
-        adminPage = adminService.getAdmins(filters, pageable);
+        adminPage = adminService.getAdmins(filters.trim(), pageable);
         adminList = new PageImpl<>(adminPage.stream().map(adminMapper::fromAdminToDTO).toList(), pageable, adminPage.getTotalElements());
 
         return new ResponseEntity<>(adminList, HttpStatus.OK);

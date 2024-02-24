@@ -4,17 +4,25 @@ import com.example.spacelab.integration.TaskTrackingService;
 import com.example.spacelab.integration.data.TaskRequest;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.student.StudentTask;
-import com.example.spacelab.model.task.Task;
 import com.example.spacelab.service.TaskService;
 import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilterForm;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 
 @Slf4j
 @RestController
@@ -34,7 +42,7 @@ public class TaskController {
 
         filters.setStudent(AuthUtil.getLoggedInPrincipal().getId());
         Pageable pageable = PageRequest.of(page, size);
-        Page<StudentTask> taskPage = taskService.getStudentTasks(filters, pageable);
+        Page<StudentTask> taskPage = taskService.getStudentTasks(filters.trim(), pageable);
         return ResponseEntity.ok(taskPage.map(taskMapper::fromStudentTaskToDTO));
     }
 
@@ -44,9 +52,44 @@ public class TaskController {
         return ResponseEntity.ok(taskMapper.studentTaskToCardDTO(st));
     }
 
+    @PutMapping("/{id}/ready")
+    public ResponseEntity<?> markTaskAsReady(@PathVariable Long id) {
+        taskService.markStudentTaskAsReady(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{id}/not-ready")
+    public ResponseEntity<?> markTaskAsNotReady(@PathVariable Long id) {
+        taskService.markStudentTaskAsNotReady(id);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/{id}/points")
     public ResponseEntity<?> getTaskProgressPoints(@PathVariable Long id) {
         return ResponseEntity.ok(taskService.getStudentTaskProgressPoints(id));
+    }
+
+    // Экспорт в PDF
+    @GetMapping("/{id}/export/pdf")
+    public ResponseEntity<?> exportTaskToPDF(@PathVariable Long id,
+                                             @RequestParam(required = false, defaultValue = "ua") String locale) throws IOException {
+        File file;
+        try {
+            file = taskService.generatePDF(id, locale);
+        } catch (Exception e) {
+            log.error(e.getClass().toString());
+            log.error(e.getMessage());
+            return ResponseEntity.unprocessableEntity().body("Could not generate pdf file");
+        }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData(file.getName(), file.getName());
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        return new ResponseEntity<>(
+                new InputStreamResource(Files.newInputStream(file.getAbsoluteFile().toPath(), StandardOpenOption.DELETE_ON_CLOSE)),
+                headers,
+                HttpStatus.OK
+        );
     }
 
     @PutMapping("/points/complete")

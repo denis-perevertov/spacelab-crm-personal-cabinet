@@ -1,14 +1,13 @@
 package com.example.spacelab.mapper;
 
+import com.example.spacelab.dto.admin.AdminContactDTO;
+import com.example.spacelab.dto.admin.AdminDTO;
+import com.example.spacelab.dto.admin.AdminEditDTO;
 import com.example.spacelab.dto.admin.AdminLoginInfoDTO;
 import com.example.spacelab.dto.course.CourseListDTO;
 import com.example.spacelab.exception.MappingException;
 import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.model.admin.Admin;
-import com.example.spacelab.dto.admin.AdminDTO;
-
-import com.example.spacelab.dto.admin.AdminContactDTO;
-import com.example.spacelab.dto.admin.AdminEditDTO;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.repository.AdminRepository;
 import com.example.spacelab.repository.CourseRepository;
@@ -18,9 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 @Component
 @Log
@@ -116,7 +115,7 @@ public class AdminMapper {
 
             List<Long> courseIDs = Arrays.asList(dto.getCourseID());
             if(courseIDs.size() > 0) {
-                List<Course> adminCourses = admin.getCourses();
+                List<Course> adminCourses = new ArrayList<>(admin.getCourses().stream().toList());
                 adminCourses.clear();
                 adminCourses.addAll(courseIDs.stream().map(courseRepository::getReferenceById).toList());
             }

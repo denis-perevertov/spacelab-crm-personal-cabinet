@@ -3,7 +3,6 @@ package com.example.spacelab.dto.student;
 import com.example.spacelab.model.student.StudentEducationLevel;
 import com.example.spacelab.model.student.StudentEnglishLevel;
 import com.example.spacelab.model.student.StudentWorkStatus;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,6 +28,8 @@ public record StudentRegisterRequest(
         String confirmPassword,
 
         MultipartFile avatar,
-        Long courseId
+        Long courseId,
+
+        String inviteToken
 ) {
 }

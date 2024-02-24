@@ -1,13 +1,15 @@
 package com.example.spacelab.service;
 
 import com.example.spacelab.model.course.Course;
-import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentTask;
 import com.example.spacelab.model.task.Task;
 import com.example.spacelab.util.FilterForm;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.List;
 
 public interface TaskService extends StudentTaskService,
@@ -20,4 +22,5 @@ public interface TaskService extends StudentTaskService,
 
     List<StudentTask> createStudentTaskListFromCourse(Course course);
 
+    File generatePDF(Long taskId, String localeCode) throws IOException, URISyntaxException;
 }

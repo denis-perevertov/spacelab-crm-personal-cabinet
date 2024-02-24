@@ -1,9 +1,9 @@
 package com.example.spacelab.mapper;
 
 import com.example.spacelab.dto.course.CourseLinkDTO;
+import com.example.spacelab.dto.student.StudentTaskDTO;
 import com.example.spacelab.dto.task.*;
 import com.example.spacelab.exception.MappingException;
-import com.example.spacelab.dto.student.StudentTaskDTO;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.literature.Literature;
 import com.example.spacelab.model.student.Student;
@@ -13,7 +13,6 @@ import com.example.spacelab.model.task.Task;
 import com.example.spacelab.repository.CourseRepository;
 import com.example.spacelab.repository.LiteratureRepository;
 import com.example.spacelab.repository.TaskRepository;
-import com.example.spacelab.util.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.data.domain.Page;
@@ -180,8 +179,14 @@ public class TaskMapper {
         try {
             dto.setId(task.getId());
             dto.setName(task.getName());
+            dto.setStatus(task.getStatus());
             if(Objects.nonNull(task.getCourse())) {
-                dto.setCourse(new CourseLinkDTO().setId(task.getCourse().getId()).setName(task.getCourse().getName()));
+                dto.setCourse(
+                        new CourseLinkDTO()
+                                .setId(task.getCourse().getId())
+                                .setName(task.getCourse().getName())
+                                .setIcon(task.getCourse().getIcon())
+                );
             }
 
             if(task.getParentTask() != null) {
@@ -364,6 +369,7 @@ public class TaskMapper {
         if(studentTask == null) return null;
         else return new StudentTaskCardDTO(
                 studentTask.getId(),
+                studentTask.getStatus(),
                 studentTask.getBeginDate(),
                 studentTask.getEndDate(),
                 fromTaskToInfoDTO(studentTask.getTaskReference()),

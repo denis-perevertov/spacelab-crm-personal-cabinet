@@ -2,15 +2,12 @@ package com.example.spacelab.service;
 
 import com.example.spacelab.dto.student.StudentTaskLessonDTO;
 import com.example.spacelab.dto.task.StudentTaskPointDTO;
-import com.example.spacelab.integration.data.TaskResponse;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentTask;
-import com.example.spacelab.model.student.StudentTaskStatus;
 import com.example.spacelab.util.FilterForm;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
@@ -31,6 +28,7 @@ public interface StudentTaskService {
     void createStudentTasksOnCourseTransfer(Student student, Course course);
 
     void completeStudentTask(Long taskID);
-
+    void markStudentTaskAsReady(Long taskID);
+    void markStudentTaskAsNotReady(Long taskID);
 
 }

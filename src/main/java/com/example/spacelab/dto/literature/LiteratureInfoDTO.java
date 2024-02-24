@@ -21,6 +21,8 @@ public class LiteratureInfoDTO {
     @Schema(example = "CourseName")
     private String courseName;
 
+    private String courseIcon;
+
     @Schema(example = "BOOK")
     private LiteratureType type;
 
@@ -30,6 +32,8 @@ public class LiteratureInfoDTO {
     @Schema(example = "keyword1, keyword2")
     private String keywords;
 
+    private String resource_file;
+
     @Schema(example = "book.pdf")
     private String resource_link;
 
@@ -37,7 +41,9 @@ public class LiteratureInfoDTO {
     private String description;
 
     @Schema(example = "book_thumbnail.png")
-    private String img;
+    private String thumbnail;
+
+    private byte[] test;
 
     private boolean verified;
 

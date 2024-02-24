@@ -3,17 +3,19 @@ package com.example.spacelab.integration.teamwork;
 import com.example.spacelab.config.TeamworkProperties;
 import com.example.spacelab.integration.data.ApiResponse;
 import com.example.spacelab.integration.data.ErrorResponse;
-import com.example.spacelab.integration.data.UserCreateRequest;
-import com.example.spacelab.integration.data.UserResponse;
 import com.example.spacelab.integration.teamwork.data.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 @Slf4j
 @Component
@@ -97,7 +99,7 @@ public class TeamworkClient {
         return response;
     }
 
-    public ApiResponse<TeamworkTaskListCreateResponse> createTaskList(TeamworkTaskListRequest request) {
+    public ApiResponse<TeamworkTaskListCreateResponse> createTaskList(String projectId, TeamworkTaskListRequest request) {
 
         log.info("client request: {}", request);
 
@@ -105,7 +107,7 @@ public class TeamworkClient {
 
         ApiResponse<TeamworkTaskListCreateResponse> response = client.post()
                 .uri(properties.getBaseUrl() +
-                        "/projects/" + properties.getProjectId() +
+                        "/projects/" + projectId +
                         "/tasklists.json")
                 .headers(headers -> {
                     headers.setBasicAuth(properties.getToken(), "");
@@ -366,6 +368,67 @@ public class TeamworkClient {
                 .block();
 
         log.info("client response: {}", response);
+
+        if(response != null && response.getData() != null && response.getData().tasks().isEmpty()) {
+            log.info("tasks not found, trying api v1 url");
+
+            response = client.get()
+                    .uri(builder -> builder
+                            .path("/tasklists/" + taskListId + "/tasks.json")
+                            .queryParam("includeCompletedTasks", true)
+                            .queryParam("includeRelatedTasks", true)
+                            .build())
+                    .headers(headers -> {
+                        headers.setBasicAuth(properties.getToken(), "");
+                    })
+                    .exchangeToMono(res -> {
+                        if(res.statusCode().is2xxSuccessful()) {
+                            return res.bodyToMono(TeamworkTaskListV1Response.class)
+                                    .map(data -> new ApiResponse<>(
+                                            new TeamworkTaskListResponse(
+                                                   data.tasks().stream().map(task -> new TeamworkTask(
+                                                         task.id(),
+                                                         task.content(),
+                                                         "",
+                                                         "",
+                                                         0,
+                                                           (
+                                                               task.tags() == null || task.tags().length == 0
+                                                               ? new Long[]{}
+                                                               : Arrays.stream(task.tags()).map(TeamworkTaskListV1Response.TeamworkTaskV1.Tag::id).toArray(Long[]::new)
+                                                           ),
+                                                           task.status(),
+                                                           ZonedDateTime.now(),
+                                                           (
+                                                                   task.parentTaskId() == null || task.parentTaskId().isEmpty()
+                                                                   ? 0L
+                                                                   : Long.parseLong(task.parentTaskId())
+                                                           ),
+                                                           Long.valueOf(taskListId),
+                                                           new Integer[]{},
+                                                           new Long[]{}
+                                                   )).toList(),
+                                                    new Object(),
+                                                    new Object()
+                                            ),
+                                            null,
+                                            res.statusCode().toString()
+                                    ));
+                        }
+                        else {
+                            return res.bodyToMono(ErrorResponse.class)
+                                    .map(errors -> new ApiResponse<TeamworkTaskListResponse>(
+                                            null,
+                                            errors.errors(),
+                                            res.statusCode().toString()
+                                    ));
+                        }
+                    })
+                    .block();
+
+
+
+        }
 
         return response;
 
@@ -840,6 +903,46 @@ public class TeamworkClient {
         return response;
     }
 
+    public ApiResponse<TeamworkUserRemoveResponse> removeUsersFromProject(String projectId, TeamworkUserRemoveRequest request) {
+
+        log.info("client request: {}", request);
+
+        WebClient client = clientBuilder.build();
+
+        ApiResponse<TeamworkUserRemoveResponse> response = client.put()
+                .uri(properties.getBaseUrl() +
+                        "/projects/" + projectId + "/people.json")
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                })
+                .bodyValue(request)
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkUserRemoveResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkUserRemoveResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+
+    }
+
     public ApiResponse<TeamworkProjectResponse> createProject(TeamworkProjectRequest request) {
 
         log.info("client request: {}", request);
@@ -956,6 +1059,48 @@ public class TeamworkClient {
         return response;
     }
 
+    public ApiResponse<TeamworkTimeEntryResponse> createProjectTimeEntry(TeamworkTimeEntryCreateRequest request) {
+
+        log.info("client request: {}", request);
+
+        WebClient client = clientBuilder.build();
+
+        ApiResponse<TeamworkTimeEntryResponse> response = client.post()
+                .uri(properties.getBaseUrl() +
+                        "/projects/api/" + properties.getApiVersion() +
+                        "/projects/" + request.timelog().projectId() + "/time.json")
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                    headers.setContentType(MediaType.APPLICATION_JSON);
+                })
+                .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkTimeEntryResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkTimeEntryResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+
+    }
+
     public ApiResponse<Void> completeTask(String taskId) {
 
         log.info("client request: {}", taskId);
@@ -1070,7 +1215,170 @@ public class TeamworkClient {
     }
 
 
+    // fixme change endpoints from api v1 to api v3
+    public ApiResponse<TeamworkAccountTimeTotalResponse> getAccountTimeTotal() {
+        WebClient client = clientBuilder
+                .baseUrl(properties.getBaseUrl())
+                .build();
 
+        ApiResponse<TeamworkAccountTimeTotalResponse> response = client.get()
+                .uri(builder -> builder
+                        .path("/time/total.json")
+                        .build())
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                })
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkAccountTimeTotalResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkAccountTimeTotalResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+    }
+
+    // fixme change endpoints from api v1 to api v3
+    public ApiResponse<TeamworkAccountTimeTotalResponse> getAccountTimeThisMonth() {
+
+        String thisMonthBeginString = LocalDateTime.now().withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String nextMonthBeginString = LocalDateTime.now().plusMonths(1).withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+        WebClient client = clientBuilder
+                .baseUrl(properties.getBaseUrl())
+                .build();
+
+        ApiResponse<TeamworkAccountTimeTotalResponse> response = client.get()
+                .uri(builder -> builder
+                        .path("/time/total.json")
+                        .queryParam("fromDate", thisMonthBeginString)
+                        .queryParam("toDate", nextMonthBeginString)
+                        .build())
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                })
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkAccountTimeTotalResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkAccountTimeTotalResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+    }
+
+    public ApiResponse<TeamworkTimeTotalResponse> getUserTimeTotal(String userId) {
+
+        WebClient client = clientBuilder
+                .baseUrl(properties.getBaseUrl())
+                .build();
+
+        ApiResponse<TeamworkTimeTotalResponse> response = client.get()
+                .uri(builder -> builder
+                        .path("/projects/api/v3/time/total.json")
+                        .queryParam("assignedToUserIds", userId)
+                        .build())
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                })
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkTimeTotalResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkTimeTotalResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+    }
+
+    public ApiResponse<TeamworkTimeTotalResponse> getUserTimeTotalThisMonth(String userId) {
+
+        String thisMonthBeginString = LocalDateTime.now().withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        String nextMonthBeginString = LocalDateTime.now().plusMonths(1).withDayOfMonth(1).format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+        WebClient client = clientBuilder
+                .baseUrl(properties.getBaseUrl())
+                .build();
+
+        ApiResponse<TeamworkTimeTotalResponse> response = client.get()
+                .uri(builder -> builder
+                        .path("/projects/api/v3/time/total.json")
+                        .queryParam("assignedToUserIds", userId)
+                        .queryParam("startDate", thisMonthBeginString)
+                        .queryParam("endDate", nextMonthBeginString)
+                        .build())
+                .headers(headers -> {
+                    headers.setBasicAuth(properties.getToken(), "");
+                })
+                .exchangeToMono(res -> {
+                    if(res.statusCode().is2xxSuccessful()) {
+                        return res.bodyToMono(TeamworkTimeTotalResponse.class)
+                                .map(data -> new ApiResponse<>(
+                                        data,
+                                        null,
+                                        res.statusCode().toString()
+                                ));
+                    }
+                    else {
+                        return res.bodyToMono(ErrorResponse.class)
+                                .map(errors -> new ApiResponse<TeamworkTimeTotalResponse>(
+                                        null,
+                                        errors.errors(),
+                                        res.statusCode().toString()
+                                ));
+                    }
+                })
+                .block();
+
+        log.info("client response: {}", response);
+
+        return response;
+    }
 
 
 

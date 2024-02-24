@@ -5,7 +5,6 @@ import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
@@ -34,7 +33,7 @@ public class StudentDetails {
     @Schema(example = "http://www.linkedin.com/link")
     private String linkedinLink;
 
-    @DateTimeFormat(pattern = "MM/dd/yyyy")
+//    @JsonFormat(pattern = "dd.MM.yyyy")
     private LocalDate birthdate;
 
     @Enumerated(value = EnumType.STRING)
@@ -52,7 +51,5 @@ public class StudentDetails {
     @Enumerated(value = EnumType.STRING)
     @Schema(example = "ACTIVE")
     private StudentAccountStatus accountStatus;
-
-    private String availableTime;
 
 }

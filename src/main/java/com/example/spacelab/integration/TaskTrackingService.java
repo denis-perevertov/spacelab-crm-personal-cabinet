@@ -13,7 +13,8 @@ import java.util.List;
 public interface TaskTrackingService {
 
         UserResponse createTaskUser(UserCreateRequest request);
-        // todo add users to project
+        UserAddResponse addUsersToProject(UserAddRequest request);
+        UserRemoveResponse removeUsersFromProject(UserRemoveRequest request);
 
         ProjectResponse createProject(ProjectRequest request);
         ProjectResponse updateProject(ProjectRequest request);
@@ -39,6 +40,7 @@ public interface TaskTrackingService {
         TimeEntryResponse getTimeEntry(String timelogId);
         TimeEntryResponse createTimeEntryForTask(TimeEntryRequest request);
         TimeEntryResponse updateTimeEntryForTask(TimeEntryRequest request);
+        TimeEntryResponse createTimeEntryForProject(TimeEntryRequest request);
         void deleteTimeEntry(String timelogId);
 
         TimeTotalResponse getTotalTimeOnTaskList(String taskListId);
@@ -47,5 +49,11 @@ public interface TaskTrackingService {
         TagResponse getTagByName(String tagName);
         TagResponse getTagById(String tagId);
         String getRecommendedTagName();
+
+        AccountTimeTotalResponse getTotalLearningTimeForPlatform();
+        AccountTimeTotalResponse getRecentLearningTimeForPlatform();
+
+        TimeTotalResponse getUserTotalTime(String userId);
+        TimeTotalResponse getUserTotalTimeRecent(String userId);
 
 }

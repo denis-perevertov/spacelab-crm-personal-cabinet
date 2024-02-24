@@ -47,6 +47,36 @@ public class TeamworkService implements TaskTrackingService {
     }
 
     @Override
+    public UserAddResponse addUsersToProject(UserAddRequest request) {
+        ApiResponse<TeamworkUserAddResponse> response = client.addUsersToProject(request.projectId(), new TeamworkUserAddRequest(request.userIds()));
+        return Optional.ofNullable(response.getData())
+                .map(res -> new UserAddResponse(
+                        res.usersAdded(),
+                        res.usersAlreadyInProject(),
+                        res.usersNotAdded()
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
+    public UserRemoveResponse removeUsersFromProject(UserRemoveRequest request) {
+        ApiResponse<TeamworkUserRemoveResponse> response = client.removeUsersFromProject(
+                request.projectId(),
+                new TeamworkUserRemoveRequest(new TeamworkUserRemoveRequest.Remove(request.remove().userIdList()))
+        );
+        return Optional.ofNullable(response.getData())
+                .map(res -> new UserRemoveResponse(
+                        res.status(),
+                        new UserRemoveResponse.Details(
+                                res.details().added(),
+                                res.details().removed(),
+                                res.details().failed()
+                        )
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
     public ProjectResponse createProject(ProjectRequest request) {
         TeamworkProjectRequest teamworkRequest = new TeamworkProjectRequest(
                 new TeamworkProject(
@@ -97,7 +127,7 @@ public class TeamworkService implements TaskTrackingService {
                 request.applyDefaultsToExistingTasks(),
                 request.taskList()
         );
-        ApiResponse<TeamworkTaskListCreateResponse> response = client.createTaskList(teamworkRequest);
+        ApiResponse<TeamworkTaskListCreateResponse> response = client.createTaskList(request.projectId(), teamworkRequest);
         return Optional.ofNullable(response.getData())
                 .map(res -> new TaskListResponse(
                         res.status(),
@@ -399,7 +429,28 @@ public class TeamworkService implements TaskTrackingService {
                 request.tags(),
                 request.timelogOptions()
         );
-        ApiResponse<TeamworkTimeEntryResponse> response = client.updateTaskTimeEntry(request.timelog().id(), teamworkRequest);
+        ApiResponse<TeamworkTimeEntryResponse> response = client.updateTaskTimeEntry(request.id(), teamworkRequest);
+        return Optional.ofNullable(response.getData())
+                .map(TeamworkTimeEntryResponse::timelog)
+                .map(timeEntry -> new TimeEntryResponse(
+                        timeEntry.id(),
+                        timeEntry.minutes(),
+                        timeEntry.beginTime(),
+                        timeEntry.userId(),
+                        timeEntry.taskId(),
+                        timeEntry.projectId()
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
+    public TimeEntryResponse createTimeEntryForProject(TimeEntryRequest request) {
+        TeamworkTimeEntryCreateRequest teamworkRequest = new TeamworkTimeEntryCreateRequest(
+                request.timelog(),
+                request.tags(),
+                request.timelogOptions()
+        );
+        ApiResponse<TeamworkTimeEntryResponse> response = client.createProjectTimeEntry(teamworkRequest);
         return Optional.ofNullable(response.getData())
                 .map(TeamworkTimeEntryResponse::timelog)
                 .map(timeEntry -> new TimeEntryResponse(
@@ -486,6 +537,62 @@ public class TeamworkService implements TaskTrackingService {
     @Override
     public String getRecommendedTagName() {
         return "recommended";
+    }
+
+    @Override
+    public AccountTimeTotalResponse getTotalLearningTimeForPlatform() {
+        ApiResponse<TeamworkAccountTimeTotalResponse> response = client.getAccountTimeTotal();
+        return Optional.ofNullable(response.getData())
+                .map(t -> new AccountTimeTotalResponse(
+                        t.timeTotals().minutes(),
+                        t.timeTotals().hours()
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
+    public AccountTimeTotalResponse getRecentLearningTimeForPlatform() {
+        ApiResponse<TeamworkAccountTimeTotalResponse> response = client.getAccountTimeThisMonth();
+        return Optional.ofNullable(response.getData())
+                .map(t -> new AccountTimeTotalResponse(
+                        t.timeTotals().minutes(),
+                        t.timeTotals().hours()
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
+    public TimeTotalResponse getUserTotalTime(String userId) {
+        ApiResponse<TeamworkTimeTotalResponse> response = client.getUserTimeTotal(userId);
+        return Optional.ofNullable(response.getData())
+                .map(timeTotal -> new TimeTotalResponse(
+                        new TimeTotal(
+                                timeTotal.taskTimeTotal().minutes(),
+                                timeTotal.taskTimeTotal().estimatedMinutes()
+                        ),
+                        new TimeTotal(
+                                timeTotal.subtaskTimeTotal().minutes(),
+                                timeTotal.subtaskTimeTotal().estimatedMinutes()
+                        )
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
+    }
+
+    @Override
+    public TimeTotalResponse getUserTotalTimeRecent(String userId) {
+        ApiResponse<TeamworkTimeTotalResponse> response = client.getUserTimeTotalThisMonth(userId);
+        return Optional.ofNullable(response.getData())
+                .map(timeTotal -> new TimeTotalResponse(
+                        new TimeTotal(
+                                timeTotal.taskTimeTotal().minutes(),
+                                timeTotal.taskTimeTotal().estimatedMinutes()
+                        ),
+                        new TimeTotal(
+                                timeTotal.subtaskTimeTotal().minutes(),
+                                timeTotal.subtaskTimeTotal().estimatedMinutes()
+                        )
+                ))
+                .orElseThrow(() -> new TeamworkException(response.getErrors()));
     }
 
 
