@@ -8,6 +8,7 @@ import com.example.spacelab.mapper.ContactInfoMapper;
 import com.example.spacelab.model.contact.ContactInfo;
 import com.example.spacelab.service.ContactInfoService;
 import com.example.spacelab.validator.ContactValidator;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,6 +18,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -30,9 +32,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+@Hidden
 @Tag(name="Contact", description = "Contact info controller")
+@Slf4j
 @RestController
-@Log
 @RequiredArgsConstructor
 @RequestMapping("/api/contacts")
 public class ContactController {

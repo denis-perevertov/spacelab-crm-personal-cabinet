@@ -1,5 +1,6 @@
 package com.example.spacelab.controller;
 
+import com.example.spacelab.api.CourseAPI;
 import com.example.spacelab.mapper.CourseMapper;
 import com.example.spacelab.service.CourseService;
 import com.example.spacelab.util.AuthUtil;
@@ -9,18 +10,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Course", description = "Course controller")
+@Slf4j
 @RestController
-@Log
-@Data
 @RequiredArgsConstructor
 @RequestMapping("/api/course")
-public class CourseController {
+public class CourseController implements CourseAPI {
 
     private final CourseService courseService;
     private final CourseMapper mapper;

@@ -8,6 +8,7 @@ import java.time.Instant;
 
 @Data
 @Entity
+@Table(name="refresh_token_student")
 public class RefreshToken {
 
     @Id
