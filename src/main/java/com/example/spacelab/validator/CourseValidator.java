@@ -1,6 +1,5 @@
 package com.example.spacelab.validator;
 
-import com.example.spacelab.dto.course.*;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.repository.AdminRepository;
 import com.example.spacelab.repository.CourseRepository;

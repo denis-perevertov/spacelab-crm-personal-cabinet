@@ -1,13 +1,11 @@
 package com.example.spacelab.config;
 
-import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.role.UserRole;
 import com.example.spacelab.model.student.Student;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.test.context.support.WithSecurityContextFactory;
 
 public class WithMockCustomUserSecurityContextFactory implements WithSecurityContextFactory<WithMockCustomUser> {

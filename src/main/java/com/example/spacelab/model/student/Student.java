@@ -2,20 +2,28 @@ package com.example.spacelab.model.student;
 
 import com.example.spacelab.model.UserEntity;
 import com.example.spacelab.model.course.Course;
-import com.example.spacelab.model.lesson.LessonReportRow;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Objects;
+import java.util.Set;
 
-@Data
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Entity
 @Table(name="students")
 public class Student extends UserEntity implements UserDetails {
@@ -27,6 +35,14 @@ public class Student extends UserEntity implements UserDetails {
 
     private Integer rating;
 
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
+
+    private int learningDuration;
+
     @ManyToOne
     @JoinColumn(name = "course_id")
     private Course course;
@@ -34,11 +50,9 @@ public class Student extends UserEntity implements UserDetails {
     @ToString.Exclude
     @JsonManagedReference
     @OneToMany(mappedBy = "student")
-    private List<StudentTask> tasks = new ArrayList<>();
+    private Set<StudentTask> tasks = new HashSet<>();
 
-    @ToString.Exclude
-    @OneToMany(mappedBy = "student")
-    private List<LessonReportRow> lessonData = new ArrayList<>();
+    private String taskTrackingProfileId;
 
     public String getFullName() {
         return String.join(" ",
@@ -47,7 +61,10 @@ public class Student extends UserEntity implements UserDetails {
                 this.details.getLastName());
     }
 
-    @Override
+    public String getInitials() {
+        return this.details.getFirstName().charAt(0) + "." + this.details.getLastName();
+    }
+
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return this.getRole().getAuthorities().stream().map(SimpleGrantedAuthority::new).toList();
     }
@@ -64,7 +81,7 @@ public class Student extends UserEntity implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !this.details.getAccountStatus().equals(StudentAccountStatus.BLOCKED);
     }
 
     @Override
@@ -74,6 +91,23 @@ public class Student extends UserEntity implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return (
+                this.details.getAccountStatus().equals(StudentAccountStatus.ACTIVE)
+                || this.details.getAccountStatus().equals(StudentAccountStatus.HIRED)
+        );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        Student student = (Student) o;
+        return Objects.equals(details, student.details) && Objects.equals(password, student.password) && Objects.equals(rating, student.rating) && Objects.equals(taskTrackingProfileId, student.taskTrackingProfileId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), details, password, rating, taskTrackingProfileId);
     }
 }

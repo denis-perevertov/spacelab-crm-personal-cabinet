@@ -3,36 +3,25 @@ package com.example.spacelab.service.impl;
 import com.example.spacelab.dto.student.StudentLessonDisplayDTO;
 import com.example.spacelab.exception.LessonException;
 import com.example.spacelab.exception.ResourceNotFoundException;
-import com.example.spacelab.job.LessonMonitor;
 import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.lesson.LessonStatus;
 import com.example.spacelab.model.student.Student;
-import com.example.spacelab.model.task.Task;
-import com.example.spacelab.model.task.TaskLevel;
-import com.example.spacelab.model.task.TaskStatus;
 import com.example.spacelab.repository.AdminRepository;
 import com.example.spacelab.repository.CourseRepository;
 import com.example.spacelab.repository.LessonRepository;
 import com.example.spacelab.service.LessonService;
 import com.example.spacelab.service.TaskService;
 import com.example.spacelab.service.specification.LessonSpecifications;
-import com.example.spacelab.service.specification.TaskSpecifications;
 import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilterForm;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,7 +65,7 @@ public class LessonServiceImpl implements LessonService {
     @Override
     public List<StudentLessonDisplayDTO> getStudentLessonDisplayData(Long id) {
         Lesson lesson = getLessonById(id);
-        List<Student> courseStudents = lesson.getCourse().getStudents();
+        List<Student> courseStudents = lesson.getCourse().getStudents().stream().toList();
         List<StudentLessonDisplayDTO> lessonDisplayData = new ArrayList<>();
         courseStudents.forEach(st -> lessonDisplayData.add(new StudentLessonDisplayDTO(
                 st.getId(),

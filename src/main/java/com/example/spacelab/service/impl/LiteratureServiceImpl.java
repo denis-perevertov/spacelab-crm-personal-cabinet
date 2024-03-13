@@ -5,6 +5,7 @@ import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.mapper.LiteratureMapper;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.literature.Literature;
+import com.example.spacelab.model.literature.LiteratureType;
 import com.example.spacelab.repository.CourseRepository;
 import com.example.spacelab.repository.LiteratureRepository;
 import com.example.spacelab.service.FileService;
@@ -13,9 +14,7 @@ import com.example.spacelab.service.specification.LiteratureSpecifications;
 import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilenameUtils;
 import com.example.spacelab.util.FilterForm;
-import com.example.spacelab.model.literature.LiteratureType;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -84,19 +83,29 @@ public class LiteratureServiceImpl implements LiteratureService{
     public Literature createNewLiterature(LiteratureSaveDTO saveRequest) throws IOException {
         Literature lit = literatureMapper.fromLiteratureSaveDTOtoLiterature(saveRequest);
 
+        lit.setIs_verified(false);
         lit.setCourse(AuthUtil.getLoggedInPrincipal().getCourse());
 
         MultipartFile file = saveRequest.getResource_file();
         if(file != null && file.getSize() > 0) {
-            String filename = FilenameUtils.generateFileName(file);
-            fileService.saveFile(file, filename, "literature", "books");
-            lit.setResource_link(filename);
+            try {
+                String filename = FilenameUtils.generateFileName(file);
+                fileService.saveFile(file, filename, "literature", "books");
+                lit.setResource_link(filename);
+            } catch (Exception e) {
+                log.warn("could not save file: {}", e.getMessage());
+            }
+
         }
         MultipartFile thumbnail = saveRequest.getThumbnail();
         if(thumbnail != null && thumbnail.getSize() > 0) {
-            String filename = FilenameUtils.generateFileName(thumbnail);
-            fileService.saveFile(thumbnail, filename, "literature", "thumbnails");
-            lit.setThumbnail(filename);
+            try {
+                String filename = FilenameUtils.generateFileName(thumbnail);
+                fileService.saveFile(thumbnail, filename, "literature", "thumbnails");
+                lit.setThumbnail(filename);
+            } catch (Exception e) {
+                log.warn("could not save image: {}", e.getMessage());
+            }
         }
         return literatureRepository.save(lit);
     }
@@ -119,8 +128,8 @@ public class LiteratureServiceImpl implements LiteratureService{
 
         Boolean verified = filters.getVerified();
 
-        Course course = (courseID == null) ? null : courseRepository.getReferenceById(courseID);
-        LiteratureType type = typeString.isEmpty() ? null : LiteratureType.valueOf(typeString);
+        Course course = (courseID == null || courseID < 0) ? null : courseRepository.getReferenceById(courseID);
+        LiteratureType type = (typeString.isEmpty() || typeString.equalsIgnoreCase("-1")) ? null : LiteratureType.valueOf(typeString);
 
         Specification<Literature> spec = Specification.where(
                 LiteratureSpecifications.hasNameOrAuthorLike(nameAuthorInput)

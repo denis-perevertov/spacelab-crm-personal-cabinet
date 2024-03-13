@@ -2,21 +2,18 @@ package com.example.spacelab.service.impl;
 
 import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.model.RefreshToken;
-import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.student.Student;
-import com.example.spacelab.repository.AdminRepository;
 import com.example.spacelab.repository.RefreshTokenRepository;
 import com.example.spacelab.repository.StudentRepository;
 import com.example.spacelab.service.RefreshTokenService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.TemporalAmount;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,5 +41,11 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         token.setExpiryDate(Instant.now().plus(Duration.ofDays(7)));
         token.setPrincipal(student);
         return repository.save(token);
+    }
+
+    @Scheduled(fixedRate = 1000 * 60) // every 1 min
+    @Transactional
+    public void deleteExpiredTokens() {
+        repository.deleteExpiredTokens(Instant.now());
     }
 }

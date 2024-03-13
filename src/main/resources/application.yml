@@ -1,4 +1,6 @@
 spring:
+#  main:
+#    allow-bean-definition-overriding: true
   profiles:
     active: local
   http:
@@ -27,22 +29,24 @@ spring:
   servlet:
     multipart:
       enabled: true
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
   output:
     ansi:
       enabled: ALWAYS
 
 
 springdoc:
-  packages-to-scan: com.example.spacelab.controller, com.example.spacelab.model
-  packages-to-exclude: com.example.spacelab.repository
+  packages-to-scan: com.example.spacelab.controller
+  packages-to-exclude: com.example.spacelab.repository, com.example.spacelab.service
   paths-to-match: /api/**
-  override-with-generic-response: false
+  #  override-with-generic-response: true
   api-docs:
     enabled: true
-    path: /api-docs
+    path: /api/docs
   swagger-ui:
+    disable-swagger-default-url: true
+    path: /api/swagger-ui
     tryItOutEnabled: true
     operationsSorter: alpha
     tagsSorter: alpha
@@ -51,14 +55,33 @@ springdoc:
 server:
   port: 1488
   servlet:
-    context-path: /spacelab
+    context-path: /spacelab/cabinet
   error:
     include-message: always
     include-binding-errors: always
 
-#logging:
-#  level:
-#    org:
-#      springframework: DEBUG
+application:
+  frontend-admin-panel:
+    port: 3001
+  frontend-personal-cabinet:
+    port: 3000
+  teamwork:
+    apiVersion: v3
+    baseUrl: https://denisscompany18.teamwork.com
+    projectId: 641861
+    token: twp_QrGASGXS0eiIr83897z18EQXoWzV
+  aws:
+    bucket:
+      name: spacelab-dp-bucket
+    accessKey: AKIAZ6H5HK6QAOMKNFFW
+    secretKey: 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
+
+logging:
+  level:
+    org:
+      springframework:
+        web: DEBUG
+      hibernate:
+        SQL: INFO
 #  pattern:
 #    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%15thread] %-60([Class: %c{1})] :: %-60([Method: %logger{0}.%M]) - %msg - line %L%n"

@@ -146,11 +146,28 @@
 			<artifactId>jakarta.xml.bind-api</artifactId>
 			<version>4.0.1</version>
 		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itext-core</artifactId>
+			<version>8.0.3</version>
+			<type>pom</type>
+		</dependency>
+		<dependency>
+			<groupId>org.bouncycastle</groupId>
+			<artifactId>bcpkix-jdk18on</artifactId>
+			<version>1.76</version>
+		</dependency>
 	</dependencies>
 
 
 	<build>
-		<finalName>spacelab_admin</finalName>
+		<finalName>spacelab_personal_cabinet</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

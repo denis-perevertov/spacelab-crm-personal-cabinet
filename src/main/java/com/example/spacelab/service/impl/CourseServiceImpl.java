@@ -1,9 +1,7 @@
 package com.example.spacelab.service.impl;
 
 import com.example.spacelab.dto.course.CourseEditDTO;
-import com.example.spacelab.dto.course.CourseIconDTO;
 import com.example.spacelab.dto.course.StudentCourseTaskInfoDTO;
-import com.example.spacelab.dto.task.TaskCourseDTO;
 import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.mapper.CourseMapper;
 import com.example.spacelab.mapper.TaskMapper;
@@ -18,25 +16,19 @@ import com.example.spacelab.service.FileService;
 import com.example.spacelab.service.StudentService;
 import com.example.spacelab.service.StudentTaskService;
 import com.example.spacelab.service.specification.CourseSpecifications;
-import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilterForm;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @Data
 @Slf4j
@@ -68,7 +60,7 @@ public class CourseServiceImpl implements CourseService {
     @Override
     public List<Task> getCourseTasks(Long id) {
         if(id == null) return new ArrayList<>();
-        else return getCourseById(id).getTasks();
+        else return getCourseById(id).getTasks().stream().toList();
     }
 
     @Override
@@ -79,7 +71,11 @@ public class CourseServiceImpl implements CourseService {
                 studentCourse.getId(),
                 studentCourse.getName(),
                 studentCourse.getIcon(),
-                student.getTasks().stream().map(taskMapper::fromStudentTaskToDTO).toList()
+                student.getTasks()
+                        .stream()
+                        .sorted((t1, t2) -> t2.getTaskReference().getTaskIndex() - t1.getTaskReference().getTaskIndex())
+                        .map(taskMapper::fromStudentTaskToDTO)
+                        .toList()
         );
     }
 
@@ -133,7 +129,7 @@ public class CourseServiceImpl implements CourseService {
 
     private void updateCourseStudents(Course c, CourseEditDTO dto) {
 
-        List<Student> courseStudents = c.getStudents();
+        Set<Student> courseStudents = c.getStudents();
         courseStudents.forEach(student -> student.setCourse(null));
         courseStudents.clear();
 

@@ -1,10 +1,7 @@
 package com.example.spacelab.validator;
 
-import com.example.spacelab.dto.course.CourseSaveUpdatedDTO;
 import com.example.spacelab.dto.lesson.LessonSaveBeforeStartDTO;
-import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.lesson.Lesson;
-import com.example.spacelab.model.lesson.LessonStatus;
 import com.example.spacelab.repository.AdminRepository;
 import com.example.spacelab.repository.CourseRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,9 +9,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 @Component
 @RequiredArgsConstructor

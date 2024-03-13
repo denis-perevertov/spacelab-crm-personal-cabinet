@@ -2,13 +2,11 @@ package com.example.spacelab.service;
 
 import com.example.spacelab.dto.student.StudentLessonDisplayDTO;
 import com.example.spacelab.model.lesson.Lesson;
-import com.example.spacelab.model.task.Task;
-import com.example.spacelab.util.FilterForm;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import io.swagger.v3.oas.annotations.Hidden;
 
 import java.util.List;
 
+@Hidden
 public interface LessonService extends EntityFilterService<Lesson>{
     List<Lesson> getLessons();
     List<Lesson> getStudentLessons();

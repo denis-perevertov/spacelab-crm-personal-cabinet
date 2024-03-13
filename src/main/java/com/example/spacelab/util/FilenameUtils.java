@@ -3,6 +3,7 @@ package com.example.spacelab.util;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.util.Objects;
 import java.util.UUID;
 
 public interface FilenameUtils {
@@ -35,7 +36,15 @@ public interface FilenameUtils {
     }
 
     static String generateFileName(MultipartFile multipartFile) {
-        return String.join("-", UUID.randomUUID().toString(), multipartFile.getOriginalFilename());
+        return String.join(
+                "-",
+                UUID.randomUUID().toString(),
+                Objects.requireNonNull(multipartFile.getOriginalFilename()).replaceAll("[-,.!$]", "_")
+        );
+    }
+
+    static String trimNameString(String string) {
+        return string.trim().replaceAll("[- ,.]", "_");
     }
 
 

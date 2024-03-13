@@ -2,7 +2,6 @@ package com.example.spacelab.mapper;
 
 import com.example.spacelab.dto.student.*;
 import com.example.spacelab.exception.MappingException;
-
 import com.example.spacelab.exception.ResourceNotFoundException;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentDetails;
@@ -84,14 +83,15 @@ public class StudentMapper {
         StudentCardDTO dto = new StudentCardDTO();
 
         try {
-
-            dto.setStudentDetails(student.getDetails());
+            dto.setAvatar(student.getAvatar());
+            dto.setStudentDetails(fromDetailsToDTO(student.getDetails()));
 
             if(student.getRole() != null)
                 dto.setRoleName(student.getRole().getName());
-            if(student.getCourse() != null)
+            if(student.getCourse() != null) {
                 dto.setCourseName(student.getCourse().getName());
-
+                dto.setCourseIcon(student.getCourse().getIcon());
+            }
         } catch (Exception e) {
             log.severe("Mapping error: " + e.getMessage());
             log.warning("DTO: " + dto);
@@ -100,6 +100,23 @@ public class StudentMapper {
         }
 
         return dto;
+    }
+
+    public StudentDetailsDTO fromDetailsToDTO(StudentDetails details) {
+        return new StudentDetailsDTO(
+                details.getFirstName(),
+                details.getLastName(),
+                details.getFathersName(),
+                details.getPhone(),
+                details.getEmail(),
+                details.getTelegram(),
+                details.getGithubLink(),
+                details.getLinkedinLink(),
+                details.getBirthdate(),
+                details.getEducationLevel(),
+                details.getEnglishLevel(),
+                details.getWorkStatus()
+        );
     }
 
     public StudentEditDTO fromStudentToEditDTO(Student student) {
@@ -252,7 +269,7 @@ public class StudentMapper {
                 (student.getDetails().getFirstName() + " " + student.getDetails().getLastName()),
                 student.getRole().getName(),
                 student.getAvatar(),
-                List.of(student.getCourse().getId()),
+                List.of(student.getCourse() != null ? student.getCourse().getId() : -1L),
                 student.getRole().getAuthorities()
         );
     }
@@ -273,7 +290,7 @@ public class StudentMapper {
         details.setEducationLevel(request.education());
         details.setEnglishLevel(request.english());
         details.setWorkStatus(request.workStatus());
-        details.setAvailableTime(request.availableTime());
+//        details.setAvailableTime(request.availableTime());
 
         if(request.courseId() != null) {
             courseRepository.findById(request.courseId()).ifPresent(student::setCourse);

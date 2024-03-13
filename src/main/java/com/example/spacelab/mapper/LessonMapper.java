@@ -3,25 +3,19 @@ package com.example.spacelab.mapper;
 import com.example.spacelab.dto.admin.AdminAvatarDTO;
 import com.example.spacelab.dto.course.CourseLinkIconDTO;
 import com.example.spacelab.dto.lesson.LessonInfoDTO;
+import com.example.spacelab.dto.lesson.LessonLinkDTO;
 import com.example.spacelab.dto.lesson.LessonListDTO;
-import com.example.spacelab.dto.lesson.LessonReportRowDTO;
 import com.example.spacelab.dto.lesson.LessonSaveBeforeStartDTO;
 import com.example.spacelab.dto.student.StudentAvatarDTO;
-import com.example.spacelab.model.admin.Admin;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.lesson.Lesson;
-import com.example.spacelab.model.lesson.LessonReport;
-import com.example.spacelab.model.lesson.LessonReportRow;
-import com.example.spacelab.model.student.StudentTask;
 import com.example.spacelab.service.AdminService;
 import com.example.spacelab.service.CourseService;
-import com.example.spacelab.model.lesson.LessonStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,19 +54,19 @@ public class LessonMapper {
         dto.setLink(lesson.getLink());
         dto.setStatus(lesson.getStatus().toString());
 
-        if(lesson.getLessonReport() != null) {
-            dto.setPresentStudentsQuantity(
-                    lesson.getLessonReport()
-                            .getRows()
-                            .stream()
-                            .filter(LessonReportRow::getWasPresent)
-                            .count()
-                            +
-                            " / "
-                            +
-                            lesson.getLessonReport().getRows().size()
-            );
-        }
+//        if(lesson.getLessonReport() != null) {
+//            dto.setPresentStudentsQuantity(
+//                    lesson.getLessonReport()
+//                            .getRows()
+//                            .stream()
+//                            .filter(LessonReportRow::getWasPresent)
+//                            .count()
+//                            +
+//                            " / "
+//                            +
+//                            lesson.getLessonReport().getRows().size()
+//            );
+//        }
 
         return dto;
     }
@@ -152,5 +146,13 @@ public class LessonMapper {
         dto.setStartsAutomatically(lesson.getStartsAutomatically());
 
         return dto;
+    }
+
+    public LessonLinkDTO fromLessonToLinkDTO(Lesson lesson) {
+        if(lesson == null) return null;
+        else return new LessonLinkDTO(
+                lesson.getId(),
+                lesson.getDatetime().atZone(ZoneId.of("UTC"))
+        );
     }
 }

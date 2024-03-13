@@ -1,11 +1,14 @@
 package com.example.spacelab.service.impl;
 
 import com.example.spacelab.dto.student.StudentTaskLessonDTO;
+import com.example.spacelab.dto.task.StudentTaskPointDTO;
+import com.example.spacelab.dto.task.StudentTaskTagDTO;
 import com.example.spacelab.exception.ResourceNotFoundException;
+import com.example.spacelab.integration.TaskTrackingService;
+import com.example.spacelab.integration.data.TaskResponse;
 import com.example.spacelab.mapper.TaskMapper;
 import com.example.spacelab.model.course.Course;
 import com.example.spacelab.model.student.Student;
-import com.example.spacelab.model.student.StudentAccountStatus;
 import com.example.spacelab.model.student.StudentTask;
 import com.example.spacelab.model.student.StudentTaskStatus;
 import com.example.spacelab.model.task.Task;
@@ -15,15 +18,14 @@ import com.example.spacelab.repository.CourseRepository;
 import com.example.spacelab.repository.StudentRepository;
 import com.example.spacelab.repository.StudentTaskRepository;
 import com.example.spacelab.repository.TaskRepository;
-import com.example.spacelab.service.StudentTaskService;
+import com.example.spacelab.service.PDFService;
 import com.example.spacelab.service.TaskService;
-import com.example.spacelab.service.specification.StudentSpecifications;
-import com.example.spacelab.service.specification.StudentTaskSpecification;
+import com.example.spacelab.service.specification.StudentTaskSpecifications;
 import com.example.spacelab.service.specification.TaskSpecifications;
-import com.example.spacelab.util.AuthUtil;
 import com.example.spacelab.util.FilterForm;
+import com.example.spacelab.util.TranslationService;
+import com.example.spacelab.util.ValidationUtils;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.java.Log;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,12 +33,17 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-import static java.util.Objects.isNull;
+import java.util.Optional;
 
 @Service
 @Log4j2
@@ -48,6 +55,9 @@ public class TaskServiceImpl implements TaskService {
     private final StudentRepository studentRepository;
     private final CourseRepository courseRepository;
     private final TaskMapper mapper;
+
+    private final TaskTrackingService trackingService;
+    private final PDFService pdfService;
 
     @Override
     public List<StudentTaskLessonDTO> getOpenStudentTasks(Student student) {
@@ -77,6 +87,59 @@ public class TaskServiceImpl implements TaskService {
                 ))
                 .limit(3)
                 .toList();
+    }
+
+    @Override
+    public List<StudentTaskPointDTO> getStudentTaskProgressPoints(Long taskId) {
+        StudentTask st = getStudentTask(taskId);
+        List<TaskResponse> response = trackingService.getAllTasksFromList(st.getTaskTrackingId());
+        List<StudentTaskPointDTO> points = response.stream().map(this::toPointDTO).toList();
+        points.forEach(point -> {
+            if(point.getParentTaskId() != null && point.getParentTaskId() != 0) {
+                points.stream()
+                        .filter(p -> p.getId().equals(point.getParentTaskId()))
+                        .findAny()
+                        .get()
+                        .getSubpoints()
+                        .add(point);
+            }
+        });
+
+        return points.stream()
+                .filter(point -> (point.getParentTaskId() == null || point.getParentTaskId() == 0))
+                .toList();
+    }
+
+    private StudentTaskPointDTO toPointDTO(TaskResponse task) {
+        List<StudentTaskTagDTO> tags = new ArrayList<>();
+        if(task.tagIds() != null && task.tagIds().length > 0) {
+            for(Long tagId : task.tagIds()) {
+                tags.add(
+                        Optional.of(trackingService.getTagById(String.valueOf(tagId)))
+                                .map(
+                                        tag -> new StudentTaskTagDTO(
+                                                tag.id(),
+                                                tag.name(),
+                                                tag.color()
+                                        )
+                                ).get()
+                );
+            }
+        }
+        return new StudentTaskPointDTO(
+                task.id(),
+                task.parentTaskId(),
+                task.tasklistId(),
+                task.name(),
+                task.description(),
+                task.priority(),
+                task.progress(),
+                task.startDate(),
+                task.status(),
+                trackingService.getTotalTimeOnTask(String.valueOf(task.id())).taskTimeTotal().minutes(),
+                trackingService.getTotalTimeOnTask(String.valueOf(task.id())).taskTimeTotal().estimatedMinutes(),
+                tags,
+                new ArrayList<>());
     }
 
     @Override
@@ -146,7 +209,7 @@ public class TaskServiceImpl implements TaskService {
         studentTask.setStudent(student);
         studentTask.setTaskReference(originalTask);
         studentTask.setSubtasks(new ArrayList<>());
-        studentTask.setBeginDate(LocalDate.now());
+        studentTask.setBeginDate(ZonedDateTime.now());
         studentTask.setStatus(StudentTaskStatus.UNLOCKED);
         studentTask.setPercentOfCompletion(0);
         studentTask = studentTaskRepository.save(studentTask);
@@ -206,7 +269,7 @@ public class TaskServiceImpl implements TaskService {
     public void createStudentTasksOnCourseTransfer(Student student, Course course) {
 
         // clear student tasks which were not completed
-        List<StudentTask> oldStudentTasks = student.getTasks();
+        List<StudentTask> oldStudentTasks = new ArrayList<>(student.getTasks().stream().toList());
         oldStudentTasks.stream()
                 .filter(studentTask -> studentTask.getStatus() != StudentTaskStatus.COMPLETED)
                 .forEach(studentTaskRepository::delete);
@@ -231,6 +294,12 @@ public class TaskServiceImpl implements TaskService {
         return course.getTasks().stream().map(this::fromTaskToStudentTask).toList();
     }
 
+    @Override
+    public File generatePDF(Long taskId, String localeCode) throws IOException, URISyntaxException {
+        Task task = getStudentTask(taskId).getTaskReference();
+        return pdfService.generatePDF(task, TranslationService.getLocale(localeCode));
+    }
+
     public StudentTask fromTaskToStudentTask(Task task) {
         // base case to exit recursion
         if(task == null) return null;
@@ -250,9 +319,25 @@ public class TaskServiceImpl implements TaskService {
         StudentTask task = studentTaskRepository.findById(taskID).orElseThrow();
         task.getTaskReference().getActiveStudents().remove(task.getStudent());
         task.setStatus(StudentTaskStatus.COMPLETED);
-        task.setEndDate(LocalDate.now());
+        task.setEndDate(ZonedDateTime.now());
         studentTaskRepository.save(task);
         log.info("task completed");
+    }
+
+    @Override
+    public void markStudentTaskAsReady(Long taskID) {
+        StudentTask task = studentTaskRepository.findById(taskID).orElseThrow();
+        task.setStatus(StudentTaskStatus.READY);
+        studentTaskRepository.save(task);
+        log.info("task {} set as ready", taskID);
+    }
+
+    @Override
+    public void markStudentTaskAsNotReady(Long taskID) {
+        StudentTask task = studentTaskRepository.findById(taskID).orElseThrow();
+        task.setStatus(StudentTaskStatus.UNLOCKED);
+        studentTaskRepository.save(task);
+        log.info("task {} set as not ready", taskID);
     }
 
 
@@ -265,9 +350,9 @@ public class TaskServiceImpl implements TaskService {
         String levelInput = filters.getLevel();
         String statusInput = filters.getStatus();
 
-        Course course = (courseID == null) ? null : courseRepository.getReferenceById(courseID);
-        TaskStatus status = (statusInput == null) ? null : TaskStatus.valueOf(statusInput);
-        TaskLevel level = (levelInput == null) ? null : TaskLevel.valueOf(levelInput);
+        Course course = (courseID == null || courseID <= 0) ? null : courseRepository.getReferenceById(courseID);
+        TaskStatus status = (statusInput == null || statusInput.isEmpty()) ? null : TaskStatus.valueOf(statusInput);
+        TaskLevel level = (levelInput == null || levelInput.isEmpty()) ? null : TaskLevel.valueOf(levelInput);
 
         Specification<Task> spec = Specification.where(TaskSpecifications.hasNameLike(name))
                 .and(TaskSpecifications.hasCourse(course))
@@ -278,23 +363,29 @@ public class TaskServiceImpl implements TaskService {
     }
 
     private Specification<StudentTask> studentTaskSpecification(FilterForm filters) {
-        StudentTaskStatus status = (filters.getStatus() == null || filters.getStatus().isEmpty())
-                ? null
-                : StudentTaskStatus.valueOf(filters.getStatus());
-        LocalDate beginDate = (filters.getBegin() == null || filters.getBegin().isEmpty())
-                ? null
-                : LocalDate.parse(filters.getBegin());
-        LocalDate endDate = (filters.getEnd() == null || filters.getEnd().isEmpty())
-                ? null
-                : LocalDate.parse(filters.getEnd());
+        Long id = filters.getId();
+        Long student = filters.getStudent();
+        String name = filters.getName();
+        Long courseID = Optional.ofNullable(filters.getCourse()).orElse(-1L);
+        String statusInput = filters.getStatus();
+        String beginDateString = filters.getBegin();
+        String endDateString = filters.getEnd();
+        // todo add dates
 
-        return new StudentTaskSpecification(
-                filters.getStudent(),
-                status,
-                filters.getName(),
-                filters.getCourse(),
-                beginDate,
-                endDate
-        );
+        StudentTaskStatus status = statusInput == null ? StudentTaskStatus.UNLOCKED : StudentTaskStatus.valueOf(statusInput);
+
+        ZonedDateTime from, to;
+        from = ValidationUtils.fieldIsEmpty(beginDateString) ? null : LocalDate.parse(beginDateString, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay().atZone(ZoneId.of("UTC"));
+        to = ValidationUtils.fieldIsEmpty(endDateString) ? null : LocalDate.parse(endDateString, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(LocalTime.MAX).atZone(ZoneId.of("UTC"));
+
+        Specification<StudentTask> spec =
+                StudentTaskSpecifications.hasCourseID(courseID <= 0 ? null : courseID)
+                        .and(StudentTaskSpecifications.hasDatesBetween(from, to))
+                        .and(StudentTaskSpecifications.hasStudentId(student))
+                        .and(StudentTaskSpecifications.hasNameLike(name))
+                        .and(StudentTaskSpecifications.hasId(id))
+                        .and(StudentTaskSpecifications.hasStatus(status));
+
+        return spec;
     }
 }
