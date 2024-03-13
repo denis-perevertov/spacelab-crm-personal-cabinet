@@ -4,15 +4,15 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.servlet.config.annotation.EnableWebMvc;
-import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.*;
+
+import java.nio.file.Paths;
 
 @Configuration
-@EnableWebMvc
 @EnableScheduling
 public class AppConfig implements WebMvcConfigurer {
 
@@ -25,8 +25,11 @@ public class AppConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler("/**")
                 .addResourceLocations("classpath:/static/");
-        registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("classpath:/static/uploads/");
+        registry.addResourceHandler("/uploads/**", "/*/uploads/**")
+                .addResourceLocations(
+                        "classpath:/static/uploads/",
+                        "file:/" + Paths.get("uploads").toFile().getAbsolutePath() + "/"
+                );
     }
 
     @Bean
@@ -36,5 +39,15 @@ public class AppConfig implements WebMvcConfigurer {
         messageSource.setBasename("classpath:messages");
         messageSource.setDefaultEncoding("UTF-8");
         return messageSource;
+    }
+
+    @Override
+    public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+        configurer.defaultContentType(MediaType.APPLICATION_JSON);
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/**");
     }
 }

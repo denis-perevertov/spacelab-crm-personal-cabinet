@@ -2,6 +2,7 @@ package com.example.spacelab.repository;
 
 import com.example.spacelab.model.lesson.LessonReportRow;
 import com.example.spacelab.model.student.Student;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+@Hidden
 @Repository
 public interface LessonReportRowRepository extends JpaRepository<LessonReportRow, Long> {
 

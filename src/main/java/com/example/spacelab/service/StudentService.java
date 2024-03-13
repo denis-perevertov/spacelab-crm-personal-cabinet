@@ -9,12 +9,14 @@ import com.example.spacelab.model.lesson.Lesson;
 import com.example.spacelab.model.lesson.LessonReportRow;
 import com.example.spacelab.model.student.Student;
 import com.example.spacelab.model.student.StudentTask;
+import io.swagger.v3.oas.annotations.Hidden;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+@Hidden
 public interface StudentService extends StudentCardService,
                                         UserDetailsService {
 

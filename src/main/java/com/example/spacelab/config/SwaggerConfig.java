@@ -33,7 +33,7 @@ public class SwaggerConfig {
                                             .contact(new Contact()
                                                                 .name("Denis Perevertov & Evgeniy Shevchenko")
                                                                 .email("testemail@gmail.com")
-                                                                .url("http://www.test.com"))
+                                                                .url("https://slj.avada-media-dev2.od.ua/spacelab/cabinet/"))
                                             .license(new License()
                                                                 .name("License of API")
                                                                 .url("API license URL")));

@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class ApiController {
 
-    @GetMapping
+    @GetMapping({"", "/"})
     public String swaggerRedirect() {
-        return "redirect:/swagger-ui/index.html";
+        return "redirect:/spacelab/cabinet/swagger-ui/index.html";
     }
 }

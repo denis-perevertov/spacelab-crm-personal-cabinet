@@ -10,16 +10,18 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 
-@OpenAPIDefinition(servers = {@Server(url = "/spacelab", description = "Default Server URL (w/ https??)")})
+@OpenAPIDefinition(
+		servers = {
+				@Server(url = "https://slj.avada-media-dev2.od.ua/spacelab/cabinet", description = "Avada Deploy"),
+				@Server(url = "www.denis-perevertov.com/spacelab/cabinet", description = "AWS Deploy"),
+				@Server(url = "http://localhost:1488/spacelab/cabinet", description = "Local")
+		}
+)
 @SpringBootApplication
-@ComponentScan( basePackages = {"com.example.spacelab", "com.example.spacelab.controller"})
-@Slf4j
 public class SpacelabApplication {
 
 	public static void main(String[] args) {
-		ApplicationContext ctx = SpringApplication.run(SpacelabApplication.class, args);
-		CourseController cc = ctx.getBean(CourseController.class);
-		AdminController ac = ctx.getBean(AdminController.class);
+		SpringApplication.run(SpacelabApplication.class, args);
 	}
 
 }
